@@ -8,8 +8,8 @@ spm_dir = fullfile(spm('dir'),'canonical');
 scalp = gifti(fullfile(spm_dir, 'scalp_2562.surf.gii'));
 cortex = gifti(fullfile(spm_dir,'cortex_20484.surf.gii'));
 
-braincolor = [240 175 105]./255; % looks more like a cadaver brain
-% braincolor = [200 120 105]./255; % pinker look
+% braincolor = [240 175 105]./255; % looks more like a cadaver brain
+braincolor = [200 120 105]./255; % pinker look
 
 % channel and optode locations
 [hline,lbl,pos] = nirx_read_chpos('optode_positions.csv');
@@ -38,7 +38,9 @@ rotate3d on;
 
 % get surface normals
 N = patchnormals(scalp);
-nirx_plot_optode3d(chpos,scalp.vertices,N);
+fa = linspace(1,size(chpos,1),size(chpos,1))./size(chpos,1);
+nirx_plot_optode3d(chpos,scalp.vertices,N, 'edgecolor',[1 1 0],'facecolor',[0 1 1],...
+    'facealpha',fa);
 
 
 
