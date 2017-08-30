@@ -48,7 +48,7 @@ g1_arr = zeros(g1n,nchan);
 g1_roi = zeros(g1n,1);
 g2_arr = zeros(g2n,nchan);
 pvals = zeros(1,nchan);
-g2_roi = zeros(g2n,1);
+g1_roi = zeros(g1n,1);
 tvals = pvals;
 
 % LOOP TO READ DATA INTO ARRAYS
@@ -56,7 +56,6 @@ for subj=1:g1n
     load(g1files(subj,:));
     tmp = S.cbeta;
     tmp(todelete) = [];
-    g1_roi(subj) = mean(tmp);
     g1_arr(subj,:) = tmp;
 end
 
@@ -64,7 +63,6 @@ for subj=1:g2n
     load(g2files(subj,:));
     tmp = S.cbeta;
     tmp(todelete) = [];
-    g1_roi(subj) = mean(tmp);
     g2_arr(subj,:) = tmp;
 end
 
@@ -73,9 +71,6 @@ for chan=1:nchan
     [tvals(chan), pvals(chan)] = t_test(g1_arr(:,chan), g2_arr(:,chan),...
         variancetype,2);
 end
-
-% T-TEST ON MEAN ROI
-[t, p] = t_test(g1_roi, g2_roi,variancetype,2);
 
 % PLOT A BRAIN
 figure('color','w');
@@ -129,9 +124,4 @@ fprintf('Significant channels:\n');
 for ii=1:length(ind)
     fprintf('%d:\t%.2f\t%.2f\n',S.ch.label(ind(ii)),tvals(ind(ii)),pvals(ind(ii)));
 end
-
-% PRINT MEAN ROI RESULT
-fprintf('Group 1 Mean: %.3f +/- %.3f\n',mean(g1_roi),std(g1_roi));
-fprintf('Group 2 Mean: %.3f +/- %.3f\n',mean(g2_roi),std(g2_roi));
-fprintf('Mean ROI T: %.3f\tP: %.3f\n',t,p);
 
