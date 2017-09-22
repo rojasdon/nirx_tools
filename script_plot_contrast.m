@@ -1,6 +1,8 @@
-% plots contrasts on 3d circles at scalp
+% plots contrasts on 3d circles at scalp, fills them with colors based on
+% t-values if non-zero, sets transparency to full if value is zero to
+% indicate non-significance.
 
-contrast = 'con_0003_TVALS.mat'; % name of your contrast to plot
+contrast = 'con_0001_TVALS.mat'; % name of your contrast to plot
 load(contrast);
 
 % surfaces from spm
@@ -8,8 +10,8 @@ spm_dir = fullfile(spm('dir'),'canonical');
 scalp = gifti(fullfile(spm_dir, 'scalp_2562.surf.gii'));
 cortex = gifti(fullfile(spm_dir,'cortex_20484.surf.gii'));
 
-% braincolor = [240 175 105]./255; % looks more like a cadaver brain
-braincolor = [200 120 105]./255; % pinker look
+braincolor = [240 175 105]./255; % looks more like a cadaver brain
+%braincolor = [200 120 105]./255; % pinker look
 
 % channel and optode locations
 [hline,lbl,pos] = nirx_read_chpos('optode_positions.csv');
@@ -51,6 +53,7 @@ fa(ind) = 1;
 % plot
 nirx_plot_optode3d(chpos,scalp.vertices,N, 'edgecolor',[0 0 1],'facecolor',TVALS_LIST,...
     'facealpha',fa,'label','T statistic');
+view(-90,0);
 
 % to set T stat range consistently between contrasts, use caxis
 caxis([-3 3]); % min and max should be min/max across all contrasts you want to plot together

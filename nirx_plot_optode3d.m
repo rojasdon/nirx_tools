@@ -32,6 +32,7 @@ fc = [1 0 0]; % fill color
 offset = 10; % slight offset in mm so circle surface does not intersect surface S
 theta = linspace(0,2*pi).';
 facelight = 'none';
+plotlegend = 0;
 
 % check for minimum required inputs
 if nargin < 3
@@ -58,6 +59,7 @@ if ~isempty(varargin)
                     offset = varargin{i+1};
                 case 'label'
                     cbarlabel = varargin{i+1};
+                    plotlegend = 1;
                 otherwise
                     error('Invalid option!');
             end
@@ -67,7 +69,7 @@ end
     
 % colors and transparencies
 Npnts = size(XYZ,1);
-if numel(fc) == 1 % all one color
+if numel(fc) == 3 % all one color
     fc = repmat(fc,Npnts,1);
 %else % set a colormap to supplied array
 %    min_t = min(fc(fc>0));
@@ -104,6 +106,9 @@ for ii=1:Npnts
     h.FaceLighting = facelight;
 end
 
-colormap; h = colorbar('SouthOutside'); ylabel(h,cbarlabel);
+colormap; 
+if plotlegend
+    h = colorbar('SouthOutside'); ylabel(h,cbarlabel);
+end
 
 end
