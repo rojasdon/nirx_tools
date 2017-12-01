@@ -14,7 +14,7 @@ function nirx_plot_optode3d(XYZ,S,N,varargin)
 % 'facecolor', an array, length n x 3, of colors to fill the circles, or a 
 %       1 x 3 vector to plot for all circles: default = [1 0
 %       0]
-% 'radius', the radius in mm of the circles to plot, a scalar: default = 6
+% 'radius', the radius in mm of the circles to plot, a scalar: default = 5
 % 'offset', the amount of surface offset, in mm, for each optode: default =
 %       10
 % 'label', the string label for a colorbar. If supplied, a colobar is

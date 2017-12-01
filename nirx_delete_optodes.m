@@ -15,6 +15,12 @@ function nirx_delete_optodes(basename,Sb,Db,varargin)
 %       07/02/16 - fixed some bugs with indexing of SDpairs and key
 %       07/04/16 - fixed issue with ch_config.txt correction
 
+% FIXME: There may be issues with supplying original SD pairings in masks
+% that are made simply for the NIRx 2d visualization. If SD pair is not in the
+% NIRx header SD mask, but is in the ch_config file, then there may be an
+% issue with not dropping the channel from the ch_config in the correction,
+% if requested.
+
 if nargin > 3
     correct_opt=1;
 else
@@ -81,8 +87,11 @@ if ~(Db==0)
     hdr.detectors = hdr.detectors - length(Db);
 end
 delmaskind = find(sd_delmask & orig_SDmask);
+% delmaskind = find(sd_delmask & fullmask);
 [Sdel, Ddel] = ind2sub(size(sd_delmask),delmaskind);
 orig_delpairs = [Sdel Ddel];
+
+% find indices of to be deleted pairs within the hdr.
 
 % correct the S-D Key field
 pairind=[];

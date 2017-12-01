@@ -34,9 +34,9 @@ figure('color',back_color);
 subplot(2,2,1);
 % plot sources, detectors, and channels
 nirx_plot_optode3d(pos(sind,:),scalp.vertices,N, 'edgecolor',source_color,'facecolor',[0 0 0],...
-    'facealpha',0);
+    'facealpha',0, 'radius',4);
 nirx_plot_optode3d(pos(dind,:),scalp.vertices,N, 'edgecolor',detector_color,'facecolor',[0 0 0],...
-    'facealpha',0);
+    'facealpha',0,'radius',4);
 % plot scalp
 s = patch('vertices',scalp.vertices,'faces',scalp.faces,'edgecolor','none',...
         'facecolor',[.8 .8 .8]);
@@ -52,9 +52,9 @@ rotate3d on; view(-90,0);
 % repeat plots with different view
 subplot(2,2,2);
 nirx_plot_optode3d(pos(sind,:),scalp.vertices,N, 'edgecolor',source_color,'facecolor',[0 0 0],...
-    'facealpha',0);
+    'facealpha',0,'radius',4);
 nirx_plot_optode3d(pos(dind,:),scalp.vertices,N, 'edgecolor',detector_color,'facecolor',[0 0 0],...
-    'facealpha',0);
+    'facealpha',0,'radius',4);
 s = patch('vertices',scalp.vertices,'faces',scalp.faces,'edgecolor','none',...
         'facecolor',[.8 .8 .8]);
 alpha(s,.4);
@@ -68,7 +68,7 @@ rotate3d on; view(90,0);
 % now plot the channel locations
 subplot(2,2,3);
 nirx_plot_optode3d(chpos,scalp.vertices,N, 'edgecolor',chan_color,'facecolor',[0 0 0],...
-    'facealpha',0);
+    'facealpha',0,'radius',4);
 s = patch('vertices',scalp.vertices,'faces',scalp.faces,'edgecolor','none',...
         'facecolor',[.8 .8 .8]);
 alpha(s,.4);
@@ -81,7 +81,7 @@ lighting gouraud;
 rotate3d on; view(-90,0);
 subplot(2,2,4);
 nirx_plot_optode3d(chpos,scalp.vertices,N, 'edgecolor',chan_color,'facecolor',[0 0 0],...
-    'facealpha',0);
+    'facealpha',0,'radius',4);
 s = patch('vertices',scalp.vertices,'faces',scalp.faces,'edgecolor','none',...
         'facecolor',[.8 .8 .8]);
 alpha(s,.4);

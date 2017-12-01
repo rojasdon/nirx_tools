@@ -7,7 +7,7 @@ clear all;
 
 % DEFAULTS THAT CAN BE CHANGED
 model_dir = 'HbO'; % directory within subject directory for files
-nchan = 105; % could read this from file, but I'm lazy
+nchan = 103; % could read this from file, but I'm lazy
 pcrit = .05; % uncorrected pval threshold
 mc_correct = 1; % apply FDR correction for multiple comparisons, 0 = do not apply
 
@@ -29,7 +29,7 @@ contrast_name = [contrast_name ext];
 
 % DISPLAY AND STARTING PARAMETERS
 nsub = size(pth_subjdirs,1);
-disp(sprintf('The following %d subject(s) will be preprocessed:\n',nsub))
+disp(sprintf('The following %d subject(s) will be preprocessed:\n',nsub));
 disp(pth_subjdirs);
 
 % CREATE SOME DATA AND STATS ARRAYS

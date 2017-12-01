@@ -5,9 +5,9 @@
 % have lots of bad optodes in your data set, you should delete them to
 % avoid extrapolation error
 
-file = 'pilot1-2017-04-09_001';
-bad_sources = [1,19,48];
-bad_detectors = 8;
+file = 'NIRS-2017-05-05_001';
+bad_sources = [];
+bad_detectors = [];
 threshold = 7;
 distances = [15 55];
 ma_length = 8;
@@ -39,9 +39,9 @@ nirx_interpolate_chans([file '_dsel_cint'],'optode_positions.csv',...
     'threshold',threshold);
 
 % filter the dataset
-hdr = nirx_read_hdr([file '_dsel_cint_gint.hdr']);
-[raw,~,~,~]=nirx_read_wl([file '_dsel_cint_gint'],hdr,'all');
-maraw=nirx_filter(raw,hdr,'moving',ma_length);
-maraw=nirx_filter(maraw,hdr,'high',highcut);
-nirx_write_wl([file '_dsel_cint_gint_filt'],maraw);
-nirx_write_hdr([file '_dsel_cint_gint_filt.hdr'],hdr);
+%hdr = nirx_read_hdr([file '_dsel_cint_gint.hdr']);
+%[raw,~,~,~]=nirx_read_wl([file '_dsel_cint_gint'],hdr,'all');
+%maraw=nirx_filter(raw,hdr,'moving',ma_length);
+%maraw=nirx_filter(maraw,hdr,'high',highcut);
+%nirx_write_wl([file '_dsel_cint_gint_filt'],maraw);
+%nirx_write_hdr([file '_dsel_cint_gint_filt.hdr'],hdr);
