@@ -24,20 +24,40 @@ if inp == 1
 end
 
 % report 1st trigger
-[null,~] = spm_input(num2str(onsetvec(1)),'+1','d!','First trigger time');
+spm_input(num2str(onsetvec(1)),'+1','d!','First trigger time');
 
 % get condition names and durations
 for ii = 1:nconditions
     names{ii} = spm_input(['Condition ' num2str(trigs(ii)) ' name?'],'+1','s','');
     dur(ii) = str2num(spm_input(['Condition ' num2str(ii) ' duration?'],'+1','s',''));
 end
+n_conditions = length(names);
+
+% prompt to add a condition, such as an instruction set, that is coded
+% only by the condition trigger, not separately. An example is when a block
+% of trials is always preceded by an instruction, but the trigger came on
+% the instruction, not the trials. In such cases, an offset of the trigger
+% can be accomplished here to more correctly align with the stimuli
+inp = spm_input('Do you want to add an offset and model an instruction?','','b',{'Yes','No'},1:2,'');
+offset = 0;
+if inp == 1
+    offset = spm_input('Offset in sec or scans:','+1','e');
+    origvec = onsetvec;
+    names{end+1} = 'Instruction';
+end
+onsetvec = onsetvec + offset;
 
 % onsets
-for ii = 1:length(names)
+for ii = 1:n_conditions
     tind = find(trigvals == trigs(ii));
     onsets{ii} = onsetvec(tind)';
     durations{ii} = repmat(dur(ii),1,length(onsets{ii}));
 end
+if inp == 1
+    onsets{end+1} = origvec';
+    durations{end+1} = repmat(offset,1,length(origvec));
+end
+n_conditions = length(names);
 
 % prompt to remove a condition (such as rest) that has a coded trigger
 % value - useful for implicit baseline

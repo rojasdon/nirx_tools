@@ -5,6 +5,9 @@ function chanpos = nirx_compute_chanlocs(ids,pos,chns)
 % pos = n x 3 array of positions
 % chns = n x 2 array of channel definitions
 
+% NOTE: the midpoint on a straight line isn't accurate given that the
+% points lie on a surface. Some/many will be inside the head.
+
 % first sort sensors and detectors
 sind = [];
 dind = [];
