@@ -1,7 +1,6 @@
-% 26 Jun 17: Added option to delete bad optodes
-% 8 Aug 17: Changed script to delete bad optodes, not interpolate
-% 8 Aug 17: Added option to loop over many subjects
-% 9 Aug 17: Script outputs summary document
+% This script does the NIRx to NIRS.mat conversion and temporal
+% preprocessing steps. It will also delete bad optodes based ones you wish
+% to delete for the entire group of subjects processed.
 
 % you can loop this over many subjects, but should make sure each has
 % her/his own ch_config.txt and optode_positions.csv in their directories
