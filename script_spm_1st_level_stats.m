@@ -6,6 +6,18 @@
 % her/his own custom multiple_conditions.mat file. See nirx_condition_gui.m
 % for details.
 
+% you should also create a single mat-file called contrasts.mat, with two fields:
+% 1. name = cell array of strings of contrast names
+% 2. contrast = n contrast by n column array of contrast weights as a
+%    double precision type
+% that file can be kept outside of the subject directories and you only
+% need one per study since all subject have the same contrasts applied.
+
+% It will create an 'HbO', 'HbR', or 'HbT' subdirectory for each subject
+% with the SPM results, as specified in the defaults
+
+% First working version 0.1b 03/21/2018 Don Rojas, Ph.D.
+
 clear;
 basedir = pwd;
 
@@ -21,7 +33,7 @@ ar1 = 'no'; % autocorrelations correction? yes|no
 base_dir = spm_select(1,'dir','Select a home directory');
 selected_directories = spm_select ([1 inf], 'dir','Select subject directories',{},base_dir);
 contrast_file = spm_select(1,'mat','Select .mat file with contrasts',{},base_dir,'.mat$');
-load(contrast_file);
+load(contrast_file); % should have 2 fields, name and contrast
 
 for ii=1:size(selected_directories,1)
     cd(strtrim(selected_directories(ii,:)));
@@ -78,9 +90,14 @@ for ii=1:size(selected_directories,1)
     catch
         SPM.xBF.T0 = 8;
     end
+    SPM.xBF.name = 'hrf'; 
     SPM.xBF.dt = SPM.xY.RT/SPM.xBF.T;
     SPM.xBF.Volterra = 1; % 1st Volterra expansion
     SPM.Sess.U = spm_get_ons(SPM,1);
+    
+    % covariates (none at the moment)
+    SPM.Sess(1).C.C    = [];          % [n x c double] covariates, just inserts blanks
+    SPM.Sess(1).C.name = {}; 
     
     % AR(1), if requested
     switch ar1
@@ -121,51 +138,33 @@ for ii=1:size(selected_directories,1)
         'High_pass_Filter',     Hstr,...
         'Low_pass_Filter', Lstr);
     spm_DesRep('DesMtx',SPM.xX,[],SPM.xsDes);
-    swd = fullfile(sdir, o2type);
+    swd = fullfile(pwd, o2type);
     SPM.swd = swd;
     fprintf('Saving SPM.mat... \n');
     save(fullfile(SPM.swd, 'SPM.mat'), 'SPM', spm_get_defaults('mat.format'));
     fprintf('Completed. \n\n');
     
-    tmp = 0;
-    if tmp
-        % temporal processing, re-applied
-        if strcmpi(motion_method,'MARA')
-            K.M.type = 'MARA'; 
-        else
-            K.M.type = 'no'; 
-        end
-        K.C.type = 'Band-stop filter';
-        K.C.cutoff = [0.1200    0.3500;
-                      0.7000    1.5000];
-        K.D.type = 'yes';
-        K.D.nfs = 1;
-        K.H.type = 'DCT';
-        K.H.cutoff = 128;
-        K.L.type = 'HRF';
-        P.K = K;
-
-        % apply temporal processing
-        y = spm_vec(rmfield(Y, 'od')); 
-        y = reshape(y, [P.ns P.nch 3]); 
-        [fy, P] = spm_fnirs_preproc(y, P);
-
-        % could do display of pre-post here using 
-        %mask = ones(1, P.nch);
-        %mask = mask .* P.mask;
-        %ch_roi = find(mask ~= 0);
-        % spm_fnirs_viewer_timeseries(y, P, fy, ch_roi);
-
-        % save NIRS.mat file
-        fprintf('Save NIRS.mat... \n'); 
-        P.fname.nirs = fullfile(pwd, 'NIRS.mat');
-        save(P.fname.nirs, 'Y', 'P', spm_get_defaults('mat.format')); 
-        fprintf('Completed. \n');
-
-        % Create file showing number of bad channels for each dataset
-        cd(basedir);
-        fprintf(fp,'ID=%s,%d\n',participant_id,length(find(ch_stats.allgains>7)));
-        fprintf('There are %d bad channels in %s\n',length(find(ch_stats.allgains>7)),basename);
-        fclose(fp);
+    % estimation of design
+    spm_file = spm_select('FPList', fullfile(pwd,o2type), '^SPM.mat$');
+    spm_fnirs_spm(deblank(SPM(1,:)));
+    
+    % results interpolation
+    load(SPM);
+    [SPM] = spm_fnirs_spm_interp(SPM); % interpolate GLM, takes a looong time!
+    
+    % contrasts
+    SPM     = rmfield(SPM,'xCon');      % clears any existing xCon data
+    
+    for con = 1:length(name)
+        cname            = name{con};
+        c                = contrast(con,:)';  
+        SPM.xCon(con) = spm_FcUtil('Set',cname,'T','c',c,SPM.xX.xKXs);
     end
+
+    SPM = spm_fnirs_contrasts(SPM); % produces the output files
+    
+    % change dir and report
+    cd(basedir);
+    fprintf('Finished with subject: %s\n',participant_id);
+   
 end
