@@ -9,11 +9,11 @@ clear;
 basedir = pwd;
 
 % Defaults: this script deletes bad optodes listed below
-selected_directories = spm_select ([1 inf], 'dir','Select Directory');
+selected_directories = spm_select ([1 inf], 'dir','Select Directories');
 bad_sources = [19,48];
 bad_detectors = [];
 threshold = 7; % bad gain
-distances = [25 60]; % "good" S-D distances
+distances = [25 55]; % "good" S-D distances
 motion_method = 'MARA';
 doica = 0;
 
@@ -28,8 +28,8 @@ for ii=1:size(selected_directories,1)
     participant_id=cwd(end-2:end);
     fprintf('Working on %s\n',participant_id);
     file = fullfile(cwd,basename);
-
-    % determine good channels based on distance
+    
+    % distance criteria applied
     [~,~,~]=nirx_chan_dist(file,distances,'all','yes');
     
     % find the bad channels formed by bad sources/detectors
@@ -46,14 +46,16 @@ for ii=1:size(selected_directories,1)
 
     % delete bad optodes
     nirx_delete_optodes([file '_dsel'],bad_sources,bad_detectors,'correct');
+    
+    % redo distance selection, without re-write, based on the channel mask
     [~,~,ch_stats]=nirx_chan_dist([file '_dsel_odel'],distances,'mask','no');
     save([file '_ch_stats'],'ch_stats');
 
-    % interpolate channels based on bad gains
+    % interpolate channels with bad gains
     nirx_interpolate_chans([file '_dsel_odel'],'optode_positions.csv',...
         'threshold',threshold);
     
-    % re-read header
+    % re-read header for below - see nirx_write_ch_config line
     hdr = nirx_read_hdr([basename '_dsel_odel_gint.hdr']);
     
     % convert dataset to NIRS.mat
@@ -64,10 +66,10 @@ for ii=1:size(selected_directories,1)
     [y,P] = spm_fnirs_read_nirscout(F);
     fprintf('Completed. \n');
     
-    % WATCH OUT: spm_fnirs_read_nirscout produces its own ch_config.txt
-    % file. Probably not compatible with the optode deletions, so prob
-    % save data from step prior and overwrite it here.
-    nirx_write_hdr([basename '_dsel_odel_gint.hdr'],hdr);
+    % spm_fnirs_read_nirscout produces its own ch_config.txt
+    % file. Probably not compatible with the optode deletions, so overwrite
+    % it here with saved header
+    nirx_write_ch_config('ch_config.txt',hdr);
     
     % apply Beer-Lambert Law "Convert Button" step in spm_fnirs - see
     % spm_fnirs_convert_ui.m
@@ -106,7 +108,11 @@ for ii=1:size(selected_directories,1)
     
     % temporal processing options
     if strcmpi(motion_method,'MARA')
-        K.M.type = 'MARA'; 
+        K.M.type = 'MARA';
+        K.M.chs = 1:P.nch;
+        K.M.L = 1;
+        K.M.th = 3;
+        K.M.alpha = 5;
     else
         K.M.type = 'no'; 
     end
@@ -123,6 +129,7 @@ for ii=1:size(selected_directories,1)
     % apply temporal processing
     y = spm_vec(rmfield(Y, 'od')); 
     y = reshape(y, [P.ns P.nch 3]); 
+    P.fname.nirs = fullfile(pwd, 'NIRS.mat');
     [fy, P] = spm_fnirs_preproc(y, P);
     
     % could do display of pre-post here using 
@@ -133,13 +140,12 @@ for ii=1:size(selected_directories,1)
     
     % save NIRS.mat file
     fprintf('Save NIRS.mat... \n'); 
-    P.fname.nirs = fullfile(pwd, 'NIRS.mat');
     save(P.fname.nirs, 'Y', 'P', spm_get_defaults('mat.format')); 
     fprintf('Completed. \n');
     
     % Create file showing number of bad channels for each dataset
     cd(basedir);
     fprintf(fp,'ID=%s,%d\n',participant_id,length(find(ch_stats.allgains>7)));
-    fprintf('There are %d bad channels in %s\n',length(find(ch_stats.allgains>7)),basename);
+    fprintf('There are %d bad gain channels in %s\n',length(find(ch_stats.allgains>7)),basename);
     fclose(fp);
 end

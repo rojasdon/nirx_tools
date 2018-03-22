@@ -13,7 +13,7 @@ clear all;
 % defaults
 plotopt = 1; % set to zero to view raw distances for all channels
 new_config = 1; % set to one to write a new ch_config.txt file based on your desired distances, set by thresh
-thresh = [15 55];
+thresh = [25 55];
 
 % read file
 posfile = 'optode_positions.csv';
