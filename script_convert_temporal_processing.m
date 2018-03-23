@@ -5,6 +5,10 @@
 % you can loop this over many subjects, but should make sure each has
 % her/his own ch_config.txt and optode_positions.csv in their directories
 
+% Author: Don Rojas, Ph.D.
+%         Matt Mathison
+% Version history: first working version 03/22/2018
+
 clear;
 basedir = pwd;
 
@@ -22,6 +26,7 @@ fp=fopen('bad_channels.txt','a');
 
 for ii=1:size(selected_directories,1)
     cd(strtrim(selected_directories(ii,:)));
+    save 'motion_params.mat';
     file=dir('*.evt');
     cwd = pwd;
     [~,basename,ext]=fileparts(file(1).name);
@@ -81,10 +86,10 @@ for ii=1:size(selected_directories,1)
     P.base = [1 P.ns];
     fprintf('Calculate optical density changes...\n'); 
     [Y.od, P] = spm_fnirs_calc_od(y, P);
-    fprintf('Completed. \n');
+    fprintf('Completed.\n');
     fprintf('Calculate hemoglobin concentration changes...\n');
     [Y.hbo, Y.hbr, Y.hbt] = spm_fnirs_calc_hb(Y, P);
-    fprintf('Completed. \n');
+    fprintf('Completed.\n');
     
     % ICA/PCA - not ready to use yet
     if doica
@@ -147,5 +152,6 @@ for ii=1:size(selected_directories,1)
     cd(basedir);
     fprintf(fp,'ID=%s,%d\n',participant_id,length(find(ch_stats.allgains>7)));
     fprintf('There are %d bad gain channels in %s\n',length(find(ch_stats.allgains>7)),basename);
-    fclose(fp);
 end
+fclose(fp);
+fprintf('Finished with all subjects\n');

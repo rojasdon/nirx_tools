@@ -16,7 +16,10 @@
 % It will create an 'HbO', 'HbR', or 'HbT' subdirectory for each subject
 % with the SPM results, as specified in the defaults
 
-% First working version 0.1b 03/21/2018 Don Rojas, Ph.D.
+% Author: Don Rojas, Ph.D.
+%         Matt Mathison
+
+% First working version 0.1b 03/21/2018
 
 clear;
 basedir = pwd;
@@ -149,11 +152,11 @@ for ii=1:size(selected_directories,1)
     spm_fnirs_spm(deblank(SPM(1,:)));
     
     % results interpolation
-    load(SPM);
-    [SPM] = spm_fnirs_spm_interp(SPM); % interpolate GLM, takes a looong time!
+    load(fullfile(SPM.swd,'SPM.mat')); % re-load SPM
+    SPM = spm_fnirs_spm_interp(SPM); % interpolate GLM, takes a looong time!
     
     % contrasts
-    SPM     = rmfield(SPM,'xCon');      % clears any existing xCon data
+    SPM = rmfield(SPM,'xCon');      % clears any existing xCon data
     
     for con = 1:length(name)
         cname            = name{con};
