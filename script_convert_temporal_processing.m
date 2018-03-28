@@ -5,15 +5,13 @@
 % you can loop this over many subjects, but should make sure each has
 % her/his own ch_config.txt and optode_positions.csv in their directories
 
-% Author: Don Rojas, Ph.D.
+% Authors: Don Rojas, Ph.D.
 %         Matt Mathison
 % Version history: first working version 03/22/2018
 
 clear;
-basedir = pwd;
 
 % Defaults: this script deletes bad optodes listed below
-selected_directories = spm_select ([1 inf], 'dir','Select Directories');
 bad_sources = [19,48];
 bad_detectors = [];
 threshold = 7; % bad gain
@@ -21,18 +19,31 @@ distances = [25 55]; % "good" S-D distances
 motion_method = 'MARA';
 doica = 0;
 
+% directories and files
+basedir = spm_select(1,'dir','Select base directory');
+selected_directories = spm_select ([1 inf], 'dir','Select Directories',{},basedir);
+configfile = spm_select(1,'any','Select ch_config.txt file...',{},basedir,'^ch_config.txt$');
+posfile = spm_select(1,'any','Select optode_positions.csv file...',{},basedir,'^optode_positions.csv$');
+
 % summary file for bad channels
 fp=fopen('bad_channels.txt','a');
 
 for ii=1:size(selected_directories,1)
     cd(strtrim(selected_directories(ii,:)));
-    save 'motion_params.mat';
     file=dir('*.evt');
     cwd = pwd;
     [~,basename,ext]=fileparts(file(1).name);
     participant_id=cwd(end-2:end);
     fprintf('Working on %s\n',participant_id);
     file = fullfile(cwd,basename);
+    
+    % determine if ch_config and optode_positions present
+    if ~exist('ch_config.txt','file')
+        copyfile(configfile,pwd);
+    end
+    if ~exist('optode_positions.csv','file')
+        copyfile(posfile,pwd);
+    end
     
     % distance criteria applied
     [~,~,~]=nirx_chan_dist(file,distances,'all','yes');
@@ -130,6 +141,13 @@ for ii=1:size(selected_directories,1)
     K.H.cutoff = 128;
     K.L.type = 'HRF';
     P.K = K;
+    
+    % save motion parameter file
+    chs = 1:P.nch;
+    L = K.M.L;
+    th = K.M.th;
+    alpha = K.M.alpha;
+    save('motion_params.mat','chs','L','alpha','th');
     
     % apply temporal processing
     y = spm_vec(rmfield(Y, 'od')); 

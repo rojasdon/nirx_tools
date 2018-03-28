@@ -5,15 +5,16 @@
 
 % Matt Mathison
 
-clear all;
+clear;
 
-pos_directory           = spm_select ([1 inf], 'dir','Select POS Directory');
-pos_file                = fullfile(pos_directory, 'POS.mat');
+pos_file  = spm_select (1, 'mat','Select Common POS File',{},pwd,'^POS.mat$');
 selected_directories    = spm_select ([1 inf], 'dir','Select Participant Directories');
 
 for ii=1:size(selected_directories,1)
     cd(strtrim(selected_directories(ii,:)));
     pth = pwd;
+    [~,id,~] = fileparts(pth);
+    fprintf('Working on %s\n',id);
     load('NIRS.mat');
     P.fname.pos = pos_file; 
     save('NIRS.mat','P','Y');

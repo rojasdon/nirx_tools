@@ -2,7 +2,7 @@
 % t-values if non-zero, sets transparency to full if value is zero to
 % indicate non-significance.
 
-contrast = 'con_0001_TVALS.mat'; % name of your contrast to plot
+contrast = 'con_0001_tvals.mat'; % name of your contrast to plot
 load(contrast);
 
 % surfaces from spm
@@ -47,11 +47,11 @@ N = patchnormals(scalp);
 
 % set face alphas
 fa = zeros(1,length(scalp.vertices));
-ind = find(TVALS_LIST);
+ind = find(mvals);
 fa(ind) = 1;
 
 % plot
-nirx_plot_optode3d(chpos,scalp.vertices,N, 'edgecolor',[0 0 1],'facecolor',TVALS_LIST,...
+nirx_plot_optode3d(chpos,scalp.vertices,N, 'edgecolor',[0 0 1],'facecolor',mvals,...
     'facealpha',fa,'label','T statistic');
 view(-90,0);
 

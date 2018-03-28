@@ -29,7 +29,7 @@ SPM = [];
 o2type = 'HbO'; % estimate this (HbO, HbR, HbT)
 nirs_file_filt = '^NIRS.mat$'; % regular expression for file
 SPM.xBF.UNITS = 'secs';
-conditions_filt = '^multiple_conditions_instructions.mat$';
+conditions_filt = '^multiple_conditions.mat$';
 ar1 = 'no'; % autocorrelations correction? yes|no
 
 % directories and contrasts
@@ -79,7 +79,7 @@ for ii=1:size(selected_directories,1)
     end
 
     SPM.xY.RT = 1/fs;
-    SPM.nscan = ns;
+    SPM.nscan = ns;    
     
     % TR stuff for hrf
     try
@@ -112,6 +112,16 @@ for ii=1:size(selected_directories,1)
             ar1 = 'AR(0.2)';
     end
     SPM.xVi.form = ar1;
+    
+     % correct sample difference issue - need to look at this in detail
+    if size(SPM.xVi.V,1) < SPM.nscan
+        SPM.xVi.V(1:SPM.nscan,:) = 1;
+        SPM.xVi.V(:,1:SPM.nscan) = 1;
+    end
+    if size(SPM.xVi.V,1) > SPM.nscan
+        SPM.xVi.V(SPM.nscan+1:end,:) = [];
+        SPM.xVi.V(:,SPM.nscan+1:end) = [];
+    end
     
     %  generate design matrix using specified parameters
     SPM.xY.VY = P.fname.nirs; % file name of Y
@@ -149,7 +159,7 @@ for ii=1:size(selected_directories,1)
     
     % estimation of design
     spm_file = spm_select('FPList', fullfile(pwd,o2type), '^SPM.mat$');
-    spm_fnirs_spm(deblank(SPM(1,:)));
+    spm_fnirs_spm(deblank(spm_file(1,:)));
     
     % results interpolation
     load(fullfile(SPM.swd,'SPM.mat')); % re-load SPM

@@ -7,7 +7,7 @@ clear all;
 
 % DEFAULTS THAT CAN BE CHANGED
 model_dir = 'HbO'; % directory within subject directory for files
-nchan = 103; % could read this from file, but I'm lazy
+nchan = 134; % could read this from file, but I'm lazy
 pcrit = .05; % uncorrected pval threshold
 mc_correct = 1; % apply FDR correction for multiple comparisons, 0 = do not apply
 
@@ -29,7 +29,7 @@ contrast_name = [contrast_name ext];
 
 % DISPLAY AND STARTING PARAMETERS
 nsub = size(pth_subjdirs,1);
-disp(sprintf('The following %d subject(s) will be preprocessed:\n',nsub));
+fprintf('The following %d subject(s) will be preprocessed:\n',nsub);
 disp(pth_subjdirs);
 
 % CREATE SOME DATA AND STATS ARRAYS
@@ -83,6 +83,13 @@ scatter3(coords(1,ind),coords(2,ind),coords(3,ind),40,'r','*');
 % SIGNIFICANT CHANNEL LIST
 fprintf('Significant channels:\n');
 for ii=1:length(ind)
-    fprintf('%d:\t%.2f\t%.2f\n',S.ch.label(ind(ii)),tvals(ind(ii)),pvals(ind(ii)));
+    fprintf('%d:\t%.2f\t%.4f\n',S.ch.label(ind(ii)),tvals(ind(ii)),pvals(ind(ii)));
 end
+
+% T-VALS, P-VALS and MASKED T to file
+mvals = zeros(1,length(tvals));
+mvals(ind) = tvals(ind);
+[~,nam,ext] = fileparts(contrast_name);
+save(fullfile(cwd,[nam '_tvals.mat']),'tvals','mvals','pvals');
+
 
