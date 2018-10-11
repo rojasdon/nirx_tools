@@ -10,9 +10,34 @@ hdr_ext = '.hdr';
 evt_ext = '.evt';
 outfile = 'multiple_conditions.mat';
 
+<<<<<<< Updated upstream
 % prompt for participant directories to be analyzed
 selected_directories = spm_select([1, inf],'dir','Select Particpant Directories');
 pth = pwd;
+=======
+% should get first participant from list of selected
+
+% button select which version of header file to use
+% there's probably a much better way to do this...
+hdr_selection = spm_input('Version of header file to use?','','b',{'Original','dsel','d/odel','d/o/gint'},1:4,'');
+    if hdr_selection == 1
+        header_type = '.hdr';
+    end
+    if hdr_selection == 2
+        header_type = 'dsel.hdr';
+    end
+    if hdr_selection == 3
+        header_type = 'dsel_odel.hdr';
+    end
+    if hdr_selection == 4
+        header_type = 'dsel_odel_gint.hdr';
+    end
+    full_header_type = strcat('*',participant_id,'_',header_type);
+    
+% find event file
+found_event_file        = dir('*.evt');
+event_file              = fullfile(found_event_file.folder,found_event_file.name);
+>>>>>>> Stashed changes
 
 % prompt for example condition file to use that will have names and
 % durations already in it

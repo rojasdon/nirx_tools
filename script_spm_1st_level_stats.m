@@ -16,10 +16,12 @@
 % It will create an 'HbO', 'HbR', or 'HbT' subdirectory for each subject
 % with the SPM results, as specified in the defaults
 
-% Author: Don Rojas, Ph.D.
-%         Matt Mathison
+% Authors: Don Rojas, Ph.D.
+%          Matt Mathison
 
-% First working version 0.1b 03/21/2018
+% Revision History:
+% 03/21/2018 First working version 0.1 
+% 10/10/2018 added option to read in motion parameters 0.2 
 
 clear;
 basedir = pwd;
@@ -31,6 +33,7 @@ nirs_file_filt = '^NIRS.mat$'; % regular expression for file
 SPM.xBF.UNITS = 'secs';
 conditions_filt = '^multiple_conditions.mat$';
 ar1 = 'no'; % autocorrelations correction? yes|no
+read_motion = 1; % set to read in motion parameters
 
 % directories and contrasts
 base_dir = spm_select(1,'dir','Select a home directory');
@@ -98,9 +101,16 @@ for ii=1:size(selected_directories,1)
     SPM.xBF.Volterra = 1; % 1st Volterra expansion
     SPM.Sess.U = spm_get_ons(SPM,1);
     
-    % covariates (none at the moment)
-    SPM.Sess(1).C.C    = [];          % [n x c double] covariates, just inserts blanks
-    SPM.Sess(1).C.name = {}; 
+    % movement covariates if you have them, empty if not
+    if read_motion
+        mfile = spm_select('FPList', pwd, '^R.*\.csv$');
+        mpars = load(mfile);
+        SPM.Sess(1).C.C    = mpars;          % [n x c double] covariates, just inserts blanks
+        SPM.Sess(1).C.name = {'x','y','z'}; 
+    else
+        SPM.Sess(1).C.C    = [];
+        SPM.Sess(1).C.name = {}; 
+    end
     
     % AR(1), if requested
     switch ar1
