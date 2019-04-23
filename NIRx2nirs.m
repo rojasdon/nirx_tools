@@ -69,9 +69,9 @@ tmp = hdr_str{ind};
 NIRx_Detectors = str2num(tmp(length(keyword)+1:end));
 
 %Compare to SD file for checking...
-if NIRx_Sources ~= SD.nSrcs || NIRx_Detectors ~= SD.nDets;
-   error('The number or sources and detectors in the NIRx files does not match your SD file...');
-end
+%if NIRx_Sources ~= SD.nSrcs || NIRx_Detectors ~= SD.nDets;
+%   error('The number or sources and detectors in the NIRx files does not match your SD file...');
+%end
 
 %Find Sample rate
 keyword = 'SamplingRate=';

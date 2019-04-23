@@ -7,6 +7,7 @@ chan_color = [1 1 0];
 back_color = [0 0 0];
 % braincolor = [240 175 105]./255; % looks more like a cadaver brain
 braincolor = [200 120 105]./255; % pinker look
+plotchannums = 1;
 
 % surfaces from spm
 spm_dir = fullfile(spm('dir'),'canonical');
@@ -71,6 +72,9 @@ nirx_plot_optode3d(chpos,scalp.vertices,N, 'edgecolor',chan_color,'facecolor',[0
     'facealpha',0,'radius',4);
 s = patch('vertices',scalp.vertices,'faces',scalp.faces,'edgecolor','none',...
         'facecolor',[.8 .8 .8]);
+if plotchannums
+    text(chpos(:,1),chpos(:,2),chpos(:,3),string(1:length(chpos)),'color','w');
+end
 alpha(s,.4);
 axis image off; hold on; 
 c = patch('vertices',cortex.vertices,'faces',cortex.faces,'edgecolor','none',...
@@ -84,6 +88,9 @@ nirx_plot_optode3d(chpos,scalp.vertices,N, 'edgecolor',chan_color,'facecolor',[0
     'facealpha',0,'radius',4);
 s = patch('vertices',scalp.vertices,'faces',scalp.faces,'edgecolor','none',...
         'facecolor',[.8 .8 .8]);
+if plotchannums
+    text(chpos(:,1),chpos(:,2),chpos(:,3),string(1:length(chpos)),'color','w');
+end
 alpha(s,.4);
 axis image off; hold on; 
 c = patch('vertices',cortex.vertices,'faces',cortex.faces,'edgecolor','none',...

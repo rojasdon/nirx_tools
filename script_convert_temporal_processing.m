@@ -155,6 +155,10 @@ for ii=1:size(selected_directories,1)
     P.fname.nirs = fullfile(pwd, 'NIRS.mat');
     [fy, P] = spm_fnirs_preproc(y, P);
     
+    % DCT filter not strictly necessary, because this filter is applied during estimation, but ...
+    % if you want to view results as in GUI should leave it here
+    fy = spm_fnirs_filter(fy, P, P.K.D.nfs); 
+    
     % could do display of pre-post here using 
     %mask = ones(1, P.nch);
     %mask = mask .* P.mask;
