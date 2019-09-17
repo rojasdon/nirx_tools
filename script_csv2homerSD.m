@@ -45,6 +45,8 @@ SD.MeasList(:,4) = ones(length(chns),1); % wl1
 wl2 = SD.MeasList;
 wl2(:,4) = ones(length(chns),1) * 2;
 SD.MeasList = [SD.MeasList; wl2];
+SD.MeasListAct = ones(length(chns)*2,1);
+SD.MeasListVis = ones(length(chns)*2,1);
 
 % save
 save(outfile,'SD');
