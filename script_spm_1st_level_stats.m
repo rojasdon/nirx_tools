@@ -33,7 +33,7 @@ nirs_file_filt = '^NIRS.mat$'; % regular expression for file
 SPM.xBF.UNITS = 'secs';
 conditions_filt = '^multiple_conditions.mat$';
 ar1 = 'no'; % autocorrelations correction? yes|no
-read_motion = 1; % set to read in motion parameters
+read_motion = 0; % set to read in motion parameters
 
 % directories and contrasts
 base_dir = spm_select(1,'dir','Select a home directory');

@@ -3,6 +3,8 @@
 
 % Author: Don Rojas, Ph.D.
 
+clear;
+
 % prompt for event file
 event_file              = spm_select(1,'any','Select NIRx Event File',...
                       '',pwd,'^.*\.evt$');
@@ -38,6 +40,7 @@ n_conditions = length(names);
 % of trials is always preceded by an instruction, but the trigger came on
 % the instruction, not the trials. In such cases, an offset of the trigger
 % can be accomplished here to more correctly align with the stimuli
+inp = 0;
 inp = spm_input('Do you want to add an offset and model an instruction?','','b',{'Yes','No'},1:2,'');
 offset = 0;
 if inp == 1
@@ -61,6 +64,7 @@ n_conditions = length(names);
 
 % prompt to remove a condition (such as rest) that has a coded trigger
 % value - useful for implicit baseline
+inp = 0;
 inp = spm_input('Do you want to delete a condition/trigger?','','b',{'Yes','No'},1:2,'');
 if inp == 1
     [sel,ok] = listdlg('liststring',names,'PromptString','Select Condition(s) to Remove');

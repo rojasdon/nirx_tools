@@ -63,6 +63,7 @@ Dpos = pos(dind,:);
 
 % channel distances
 for ii = 1:length(Sfull)
+    fprintf('%d\n',ii);
     Sloc = Spos(Sfull(ii),:);
     Dloc = Dpos(Dfull(ii),:);      
     chdist(ii,:) = sqrt(sum((Sloc - Dloc).^2, 2));

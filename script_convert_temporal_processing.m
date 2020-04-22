@@ -12,12 +12,14 @@
 clear;
 
 % Defaults: this script deletes bad optodes listed below
-bad_sources = [19,48];
+bad_sources = [1,19,20,48];
 bad_detectors = [];
 threshold = 7; % bad gain
-distances = [25 55]; % "good" S-D distances
+distances = [20 50]; % "good" S-D distances
 motion_method = 'MARA';
+filterdata = 0;
 doica = 0;
+
 
 % directories and files
 basedir = spm_select(1,'dir','Select base directory');
@@ -30,6 +32,13 @@ fp=fopen('bad_channels.txt','a');
 
 for ii=1:size(selected_directories,1)
     cd(strtrim(selected_directories(ii,:)));
+    % delete existing optode files
+    if exist('optode_positions.csv','file')
+        delete('optode_positions.csv');
+    end
+    if exist('ch_config.txt','file')
+        delete('ch_config.txt');
+    end
     file=dir('*.evt');
     cwd = pwd;
     [~,basename,ext]=fileparts(file(1).name);
@@ -38,12 +47,8 @@ for ii=1:size(selected_directories,1)
     file = fullfile(cwd,basename);
     
     % determine if ch_config and optode_positions present
-    if ~exist('ch_config.txt','file')
-        copyfile(configfile,pwd);
-    end
-    if ~exist('optode_positions.csv','file')
-        copyfile(posfile,pwd);
-    end
+    copyfile(configfile,fullfile(pwd,'ch_config.txt'));
+    copyfile(posfile,fullfile(pwd,'optode_positions.csv'));
     
     % distance criteria applied
     [~,~,~]=nirx_chan_dist(file,distances,'all','yes');
@@ -132,11 +137,15 @@ for ii=1:size(selected_directories,1)
     else
         K.M.type = 'no'; 
     end
-    K.C.type = 'Band-stop filter';
-    K.C.cutoff = [0.1200    0.3500;
-                  0.7000    1.5000];
-    K.D.type = 'yes';
-    K.D.nfs = 1;
+    if filterdata 
+        K.C.type = 'Band-stop filter';
+        K.C.cutoff = [0.1200    0.3500;
+                      0.7000    1.5000];
+    else
+        K.C.type = 'no';
+    end
+    K.D.type = 'no';
+    K.D.nfs = hdr.sr;
     K.H.type = 'DCT';
     K.H.cutoff = 128;
     K.L.type = 'HRF';

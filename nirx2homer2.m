@@ -75,7 +75,7 @@ sd_ind = sd_ind';
 sd_ind = find([sd_ind(:);sd_ind(:)]);
 d = d(:,sd_ind);
 
-%Find Event Markers and build S vector
+% Find Event Markers and build S vector
 keyword = 'Events="#';
 tmp = strfind(hdr_str,keyword);
 ind = find(~cellfun(@isempty,tmp)) + 1; %This gives cell of hdr_str with keyword
@@ -90,7 +90,7 @@ for i = 1:length(markertypes);
     s(events(find(events(:,1)==markertypes(i)),2),i) = 1;
 end
 
-%Create t, aux varibles
+% Create t, aux varibles
 aux = zeros(length(d),8);
 t = 0:1/fs:length(d)/fs - 1/fs;
 tIncMan = ones(length(t),1);

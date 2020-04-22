@@ -10,8 +10,8 @@ spm_dir = fullfile(spm('dir'),'canonical');
 scalp = gifti(fullfile(spm_dir, 'scalp_2562.surf.gii'));
 cortex = gifti(fullfile(spm_dir,'cortex_20484.surf.gii'));
 
-braincolor = [240 175 105]./255; % looks more like a cadaver brain
-%braincolor = [200 120 105]./255; % pinker look
+%braincolor = [240 175 105]./255; % looks more like a cadaver brain
+braincolor = [200 120 105]./255; % pinker look
 
 % channel and optode locations
 [hline,lbl,pos] = nirx_read_chpos('optode_positions.csv');
@@ -38,7 +38,7 @@ axis image off; hold on;
 c = patch('vertices',cortex.vertices,'faces',cortex.faces,'edgecolor','none',...
         'facecolor',braincolor);
 c.FaceLighting = 'gouraud';
-camlight left;
+h=camlight('left');
 %lighting gouraud;
 rotate3d on;
 

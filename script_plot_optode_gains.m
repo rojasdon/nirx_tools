@@ -26,7 +26,7 @@ snames = cell(nfiles);
 for ii=1:length(files)
     load(files(ii).name);
     tmp = strsplit(files(ii).name,'_');
-    [~,tmp,~] = fileparts(tmp{3});
+    [~,tmp,~] = fileparts(tmp{1});
     snames{ii} = tmp;
     gainmat(ii,:) = ch_stats.allgains;
 end

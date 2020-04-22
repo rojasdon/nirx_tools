@@ -1,10 +1,21 @@
 function nirx = nirx_read_hdr(file,varargin)
-% function to read NIRx .hdr file
-% will optionally make a corrected header after application of a threshold
-% on the gain matrix to remove bad channels
-%
-% file = .hdr file to read
-% varargin, can use a threshold if supplying more than 1 arg
+% PURPOSE: function to read NIRx .hdr file
+%   will optionally make a corrected header after application of a threshold
+%   on the gain matrix to remove bad channels
+% AUTHOR: Don Rojas, Ph.D.
+% INPUTS:
+%   file = .hdr file to read
+%   varargin, can apply a gain threshold if supplying more than 1 arg
+% OUTPUTS:
+%  nirx = structure containing detailed information about acquisition and data
+% REVISION HISTORY:
+%   01/20/2014 - first working version
+%   02/19/2020 - Updated to read NIRStar 15.2 header info - should be
+%                backward compatible with versions 14-15.1
+
+% TODO: 1. Add in cross talk read. It is only in headers for data files
+% with multiple sources activated simultaneously, since for sequential
+% activation, no cross talk is possible. Read NIRStar manual on cross talk.
 
 fprintf('Reading %s...\n', file);
 if nargin > 1
@@ -30,10 +41,28 @@ for ii=1:length(C)
     [hit, nohit] = regexp(char(C{ii}),exp,'match','split');
     if ~isempty(hit)
         switch(nohit{1})
+            case 'FileName'
+                nirx.file = strrep(nohit{2},'"','');
+            case 'Date'
+                nirx.date = strrep(nohit{2},'"','');
+            case 'Time'
+                nirx.time = strrep(nohit{2},'"','');
+            case 'Device'
+                nirx.device =  strrep(nohit{2},'"','');
+            case 'Source'
+                nirx.source = strrep(nohit{2},'"','');
+            case 'Mod'
+                nirx.mod = 'Human Subject';
             case 'Sources'
                 nirx.sources = str2num(nohit{2});
             case 'Detectors'
                 nirx.detectors = str2num(nohit{2});
+            case 'ShortBundles'
+                nirx.shortbundles = strrep(nohit{2},'"','');
+            case 'ShortDetIndex'
+                nirx.shortdetindex = strrep(nohit{2},'"','');
+            case 'Mod'
+                nirx.mod = 'Human Subject';
             case 'Steps'
                 nirx.steps = str2num(nohit{2});
             case 'Wavelengths'
@@ -42,18 +71,10 @@ for ii=1:length(C)
                 nirx.sr = str2num(strrep(nohit{2},'"',''));
             case 'NIRStar'
                 nirx.ver =  str2num(strrep(nohit{2},'"',''));
-            case 'Device'
-                nirx.device =  strrep(nohit{2},'"','');
-            case 'FileName'
-                nirx.file = strrep(nohit{2},'"','');
             case 'ChanDis'
                 nirx.dist = str2num(strrep(nohit{2},'"',''));
             case 'ModAmp'
                 nirx.mod = str2num(strrep(nohit{2},'"',''));
-            case 'Source'
-                nirx.source = strrep(nohit{2},'"','');
-            case 'Mod'
-                nirx.mod = 'Human Subject';
             case 'Subject'
                 nirx.sub = str2num(nohit{2});
             case 'AnIns'
@@ -63,7 +84,7 @@ for ii=1:length(C)
             case 'TrigOuts'
                 nirx.trigout = str2num(nohit{2});
             case 'Threshold'
-                nirx.thres = str2num(strrep(nohit{2},'"',''));
+                nirx.threshold = str2num(strrep(nohit{2},'"',''));
             case 'StimulusType'
                 nirx.stimtype = strrep(nohit{2},'"','');
             case 'Notes'
@@ -103,11 +124,18 @@ for jj = 1:nch
 end
 nirx.SDkey = str_ch;
 
+% short channel info, if present
+if nirx.shortbundles ~= 0
+    shortchan = true;
+    shortdets = str2num(nirx.shortdetindex);
+    lastlongdet = min(shortdets) - 1;
+end
+
 % loop through line by line to process other info
 for ii=1:7
     junk = fgetl(fp);
 end
-search_strings = {'S-D-Mask','Gains','Events'};
+search_strings = {'S-D-Mask','Gains','Events','[DarkNoise]','ChanDis'};
 while ~feof(fp)
     line = fgetl(fp);
     loc  = find(strncmp(line,search_strings,5));
@@ -146,7 +174,23 @@ while ~feof(fp)
                 else
                     nirx.events   = E';
                 end
-                % FIXME: just switch to reading the evt files here
+            case 4 % Dark noise
+                line = fgetl(fp);
+                while isempty(strfind(line,tofind))
+                    nums = textscan(line,'%.3f');
+                    dn(ind,:) = nums{1}';
+                    ind = ind + 1;
+                    line = fgetl(fp);
+                end
+                nirx.DarkNoise(1,:)  = dn;
+                line = fgetl(fp); line = fgetl(fp); % skip 1, a bit of kludge
+                while isempty(strfind(line,tofind))
+                    nums = textscan(line,'%.3f');
+                    dn(ind,:) = nums{1}';
+                    ind = ind + 1;
+                    line = fgetl(fp);
+                end
+                nirx.DarkNoise  = dn;
         end
     end
 end
@@ -162,7 +206,20 @@ nirx.nchan  = size(nirx.SDpairs,1);
 nirx.chnums = good_ind;
 nirx.maskind = ind;
 
+% close file
 fclose(fp);
+
+% short and long channel sorting
+if shortchan
+    shortind = find(nirx.SDpairs(:,2) > lastlongdet);
+    nirx.shortSDpairs = nirx.SDpairs(shortind,:);
+    nirx.shortSDindices = shortind;
+    tmp = nirx.SDpairs; tmp(shortind,:) = [];
+    nirx.longSDpairs = tmp;
+else
+    nirx.shortSDpairs = [];
+    nirx.longSDpairs = nirx.SDpairs;
+end
 
 % read entire original file into string and use regexp to replace mask
 if newfile

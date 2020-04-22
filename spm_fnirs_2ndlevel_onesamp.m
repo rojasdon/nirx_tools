@@ -7,9 +7,9 @@ clear all;
 
 % DEFAULTS THAT CAN BE CHANGED
 model_dir = 'HbO'; % directory within subject directory for files
-nchan = 134; % could read this from file, but I'm lazy
+nchan = 136; % could read this from file, but I'm lazy
 pcrit = .05; % uncorrected pval threshold
-mc_correct = 1; % apply FDR correction for multiple comparisons, 0 = do not apply
+mc_correct = 0; % apply FDR correction for multiple comparisons, 0 = do not apply
 
 % GET SPM DIRECTORY FOR SURFACES
 spmdir = fullfile(spm('dir'),'canonical');

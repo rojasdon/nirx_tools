@@ -10,12 +10,13 @@ hdr_ext = '.hdr';
 evt_ext = '.evt';
 outfile = 'multiple_conditions.mat';
 
-<<<<<<< Updated upstream
 % prompt for participant directories to be analyzed
 selected_directories = spm_select([1, inf],'dir','Select Particpant Directories');
 pth = pwd;
-=======
+
 % should get first participant from list of selected
+first_file = selected_directories(1,:);
+[pth,participant_id,~] = fileparts(first_file);
 
 % button select which version of header file to use
 % there's probably a much better way to do this...
@@ -35,9 +36,8 @@ hdr_selection = spm_input('Version of header file to use?','','b',{'Original','d
     full_header_type = strcat('*',participant_id,'_',header_type);
     
 % find event file
-found_event_file        = dir('*.evt');
+found_event_file        = dir([pth filesep participant_id filesep '*.evt']);
 event_file              = fullfile(found_event_file.folder,found_event_file.name);
->>>>>>> Stashed changes
 
 % prompt for example condition file to use that will have names and
 % durations already in it
@@ -78,6 +78,9 @@ for ii=1:size(selected_directories,1)
  
     % find event file
     event_file        = spm_select('FPList',pwd,'.*.evt$');
+    if (size(event_file,1) > 1)
+        event_file = event_file(1,:);
+    end
     
     % read event file
     [onsetvec, trigvals]    = nirx_read_evt(event_file);
@@ -133,9 +136,9 @@ for ii=1:size(selected_directories,1)
     end
     
     % hard coding durations loop
-    for dur = 1:nconditions
-        durations{dur} = durations{dur} - 2;
-    end
+    %for dur = 1:nconditions
+    %    durations{dur} = durations{dur} - 2;
+    %end
 
     % save output file
     fprintf('Saving file to disk...');
