@@ -129,6 +129,7 @@ if nirx.shortbundles ~= 0
     shortchan = true;
     shortdets = str2num(nirx.shortdetindex);
     lastlongdet = min(shortdets) - 1;
+    nirx.shortdetindex = shortdets;
 end
 
 % loop through line by line to process other info

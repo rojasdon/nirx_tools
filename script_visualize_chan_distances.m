@@ -12,8 +12,8 @@ clear all;
 
 % defaults
 plotopt = 1; % set to zero to view raw distances for all channels
-new_config = 0; % set to one to write a new ch_config.txt file based on your desired distances, set by thresh
-thresh = [20 50];
+new_config = 1; % set to one to write a new ch_config.txt file based on your desired distances, set by thresh
+thresh = [5 100];
 
 % read file
 posfile = 'optode_positions.csv';
@@ -35,12 +35,6 @@ end
 % sort the sources and detectors, if needed
 Spos = pos(sind,:);
 Dpos = pos(dind,:);
-%Slbl = lbl(sind);
-%[Slbl,Sorder] = sort(Slbl);
-%Dlbl = lbl(dind);
-%[Dlbl,Dorder] = sort(Dlbl);
-%Spos = Spos(Sorder,:);
-%Dpos = Dpos(Dorder,:);
 
 % all possible channel distances
 chdist = zeros(length(sind),length(dind));
@@ -49,6 +43,10 @@ for ii = 1:length(sind)
         chdist(ii,jj) = sqrt(sum((Spos(ii,:) - Dpos(jj,:)).^2));
     end
 end
+
+% find short channels, if present
+sind = find(chdist == 0);
+[ss,sd] = ind2sub(size(chdist),sind); % this may not work right. Compare with hdr.shortSDpairs.
 
 % visualize
 figure('color','w');
@@ -81,6 +79,6 @@ switch plotopt
         end
 end
 h=colorbar;
-ylabel(h,'Distances');
+ylabel(h,'Distances (mm)');
 xlabel('Detectors');
 ylabel('Sources');

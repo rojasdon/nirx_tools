@@ -12,9 +12,12 @@ function [chdist,good,stats] = nirx_chan_dist(basename,thresholds,selection,outp
 %   stats = structure containing useful data on gains and distances for
 %           extra reporting capability
 
-% FIXME: probably need to sort the S and D indices in case someone inputs S
+% FIXME: 1) probably need to sort the S and D indices in case someone inputs S
 % and D out of ascending order in csv file - see
 % script_visualize_chan_dist.m
+% 2) should rename function to nirx_optode_dist or nirx_sd_dist because
+% the optodes are not the channel locations. Separate function,
+% nirx_compute_chanlocs.m for channel locations from s-d pairings
 
 % defaults
 posfile = 'optode_positions.csv';

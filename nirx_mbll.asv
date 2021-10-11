@@ -1,0 +1,33 @@
+% function to compute hemoglobin concentrations from optical density, dpf and extinction data, based on posted
+% code from Ted Huppert on Homer list:
+% https://mail.nmr.mgh.harvard.edu/pipermail//homer-users/2006-July/000124.html
+% http://www.ucl.ac.uk/medphys/research/borl/intro/spectra
+function [HbO,HbR] = nirx_mbll(wl,dpf,ec,varargin)
+
+% defaults
+L=3; % distance between sources and detectors. This can be vector instead.
+
+% baseline correction
+npoints = length(wl);
+od_w1 = -log10(wl(1,:))';
+od_w2 = -log10(wl(2,:))';
+m_w1 = mean(od_w1);
+m_w2 = mean(od_w2);
+od_w1 = od_w1./repmat(m_w1,npoints,1);
+od_w2 = od_w2./repmat(m_w2,npoints,1);
+
+E = ec; % 2 x 2 array of extinctions [e1_wl1 (HbO) e2_wl1 (HbR); e1_wl2 (HbO), e2_wl2 (HbR)];
+
+% Put pathlength into dOD_L so that can perform one matrix inversion
+dOD_w1_L = dOD_w1./repmat(dpf(1)*L,npoints,1);        % Pre-divide by pathlength
+dOD_w2_L = dOD_w2./repmat(dpf(2)*L,npoints,1);
+dOD_L = [dOD_w1_L dOD_w2_L];            % Concatinate the wavelengths
+
+% Linear inversion operator 
+Einv = inv(E'*E)*E';
+
+% least squares solution for hemoglobin concentrations
+HbO_HbR = Einv * dOD_L';
+HbO = HbO_HbR(1,:);
+HbR = HbO_HbR(2,:);
+
