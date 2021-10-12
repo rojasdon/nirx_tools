@@ -5,7 +5,6 @@
 % Description: reads nirx data formats, converts od to hb concentration via 
 % modified beer-lambert law, corrects for nearest short channels, and
 % writes to nirs_kit formatted .mat file
-% TODO: turn this into a function that can be scripted
 clear;
 
 % Important for OD to HB conversion
@@ -60,6 +59,9 @@ end
 figure('color','w');
 subplot(2,1,1);
 plot(hbo(1:4,:)');
+ymax = max(max(hbo(1:4,:)));
+ymin = min(min(hbo(1:4,:)));
+yl
 legend({'1o','2o','3o','4o'});
 title('Original (o) channels (HbO)');
 hold on;

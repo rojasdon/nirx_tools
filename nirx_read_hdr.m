@@ -12,6 +12,7 @@ function nirx = nirx_read_hdr(file,varargin)
 %   01/20/2014 - first working version
 %   02/19/2020 - Updated to read NIRStar 15.2 header info - should be
 %                backward compatible with versions 14-15.1
+%   10/12/2021 - slight update to add long detector indices for ease of use
 
 % TODO: 1. Add in cross talk read. It is only in headers for data files
 % with multiple sources activated simultaneously, since for sequential
@@ -217,10 +218,13 @@ if shortchan
     nirx.shortSDindices = shortind;
     tmp = nirx.SDpairs; tmp(shortind,:) = [];
     nirx.longSDpairs = tmp;
+    nirx.longSDindices = setdiff(1:nirx.nchan,nirx.shortSDindices);
 else
     nirx.shortSDpairs = [];
     nirx.longSDpairs = nirx.SDpairs;
+    nirx.longSDindices = 1:nirx.nchan;
 end
+
 
 % read entire original file into string and use regexp to replace mask
 if newfile

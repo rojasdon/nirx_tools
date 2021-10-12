@@ -1,0 +1,86 @@
+% compute t-test and FDR correction on tft data
+% assumes 2-sample t-test
+
+% define a window of interest for multiple comparison correction
+foi = [26 36]; %freq of interest
+toi = [160 506]; %time of interest
+
+% get file names for each group
+[g1files,g1path] = uigetfile('*TFT.mat',...
+    'Select the first group','MultiSelect','on');
+[g2files,g2path] = uigetfile('*TFT.mat',...
+    'Select the first group','MultiSelect','on');
+
+% make sure more than 1 file selected per group
+if ~iscell(g1files) || ~iscell(g2files)
+    disp('Your groups must consist of 2 or more files!');
+    return;
+end
+
+% get params from first file and variable to test
+% assumes that a TFT structure exists in files
+tft=load(fullfile(char(g1path),char(g1files(1))),'-mat');
+fldnames=fieldnames(tft.TFT);
+[choice, ok] = listdlg('ListString',fldnames,'SelectionMode',...
+    'Single','Name','Select variable');
+choice = char(fldnames(choice));
+disp(sprintf('Computing stats on %s',choice)); 
+sz = size(tft.TFT.(choice));
+
+grp1=zeros(length(g1files),sz(1),sz(2));
+grp2=zeros(length(g2files),sz(1),sz(2));
+
+if size(grp1,1) ~= size(grp2,1)
+    ttype = 2;
+else
+    [ttype, ok] = listdlg('ListString',[{'Independent'} {'Dependent'}],...
+        'SelectionMode','Single','Name','Type of T-Test?');
+    if ttype ~= 1
+        ttype = 3;
+    end
+end
+
+% get data
+for nfiles=1:size(grp1,1)
+    tmp=fullfile(char(g1path),char(g1files(nfiles)));
+    load(tmp,'-mat');
+    grp1(nfiles,:,:)=TFT.(choice);
+end
+
+for nfiles=1:size(grp2,1)
+    tmp=fullfile(char(g2path),char(g2files(nfiles)));
+    load(tmp,'-mat');
+    grp2(nfiles,:,:)=TFT.(choice);
+end
+
+% compute stats
+tvals = zeros(sz(1),sz(2));
+pvals = tvals;
+[tails, ok] = listdlg('ListString',[{'1 tailed'} {'2 tailed'}],...
+        'SelectionMode','Single','Name','1 or 2 tailed p-vals?');
+for freq=1:sz(1)
+    for time=1:sz(2)
+        [tvals(freq,time) pvals(freq,time)] = ...
+            t_test(grp1(:,freq,time),...
+            grp2(:,freq,time),ttype,tails);
+    end
+end
+
+% plot stats
+figure;contourf(TFT.time,TFT.freq,tvals,20,'LineStyle','none');
+title('t-values');
+figure;contourf(TFT.time,TFT.freq,pvals,20,'LineStyle','none');
+caxis([.0001 .05]);
+title('p-values');
+
+% perform FDR correction on window of interest
+[pID pN]=FDR(pvals(foi(1):foi(2),toi(1):toi(2)),0.05);
+if ~isempty(pID)
+    ind=find(pvals<pID);
+    figure;contourf(TFT.time,TFT.freq,tvals,40,'LineStyle','none');
+    thresh=abs(min(tvals(ind)));
+    caxis([thresh max(tvals(ind))]);
+    title('FDR corrected window of interest');
+else
+    disp('No data reach significance at FDR q=.05');
+end
