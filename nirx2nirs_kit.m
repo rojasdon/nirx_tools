@@ -33,9 +33,12 @@ dpf = nirx_DPF([hdr.wl(1) hdr.wl(2)],age);
 hbo = zeros(nchans,npoints);
 hbr = hbo;
 hbt = hbo;
+[sd_dist,~,~] = nirx_sd_dist(filebase,[0 70],'mask','no'); % we don't care about good/bad here
 for chn = 1:nchans
     od = squeeze(raw(:,:,chn));
     [hbo(chn,:),hbr(chn,:),hbt(chn,:)] = nirx_mbll(od,dpf,ec);
+    % alternatively, use sd_dist in mbll call
+    % [hbo(chn,:),hbr(chn,:),hbt(chn,:)] = nirx_mbll(od,dpf,ec,sd_dist(chn));
 end
 
 % short channel regression to correct for scalp influences
@@ -60,11 +63,13 @@ end
 figure('color','w');
 subplot(2,1,1);
 plot(hbo(1:4,:)');
+xlabel('Samples'); ylabel('\Delta hemoglobin (\muM)');
 legend({'1o','2o','3o','4o'});
 title('Original (o) channels (HbO)');
 hold on;
 subplot(2,1,2);
 plot(hbo_c(1:4,:)');
+xlabel('Samples'); ylabel('\Delta hemoglobin (\muM)');
 legend({'1c','2c','3c','4c'});
 title('Corrected (c) channels (HbO)');
 
