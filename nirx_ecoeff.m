@@ -14,7 +14,7 @@ function ec = nirx_ecoeff(wl,varargin)
     else
         table = 'Moaveni';
     end
-    [table_path,~,~] = fileparts(which('/Users/donrojas/Applications/matlab_apps/nirx_tools/nirx_ecoeff.m'));
+    [table_path,~,~] = fileparts(which('nirx_ecoeff.m'));
     
     switch table
         case 'Moaveni'

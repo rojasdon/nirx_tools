@@ -1,18 +1,22 @@
-% spm12-based GUI input script for producing multi-condition event mat file
-% for spm_fnirs from nirx .evt file input
+% spm12-based GUI input script for producing multi-condition design .mat
+% files for spm_fnirs and nirs-kit from nirx .evt file input
 
 % Author: Don Rojas, Ph.D.
+% Revisions: 11/13/2021 - now works with NIRS-KIT format
 
 clear;
 
 % prompt for event file
 event_file              = spm_select(1,'any','Select NIRx Event File',...
-                      '',pwd,'^.*\.evt$');
+                        '',pwd,'^.*\.evt$');
 [onsetvec, trigvals]    = nirx_read_evt(event_file);
 trigs                   = unique(trigvals);
 nconditions             = length(trigs);
 names                   = cell(1,nconditions);
 dur                     = zeros(1,nconditions);
+
+% format choice
+format = spm_input('Output format?','','b',{'NIRS-KIT','SPM-FNIRS'},1:2,'');
 
 % input is in seconds or scans/samples?
 inp = spm_input('Onsets/Durations scaling?','','b',{'Seconds','Scans'},1:2,'');
@@ -74,6 +78,22 @@ if inp == 1
 end
 
 % save output
-outfile = spm_input('Output file name? ','+1','s','');
-[null,~] = spm_input(outfile,'+1','d!','Saving file to disk');
-save(outfile,'names','onsets','durations');
+switch format
+    case 1 % NIRS-KIT
+        [~,base,~] = fileparts(event_file);
+        outfile = [base '_task.mat'];
+        design_inf = cell(2,nconditions);
+        design_inf{1,1} = 'SubID\Condition...';
+        for ii=1:nconditions
+            design_inf{1,ii+1} = names{ii};
+        end
+        design_inf{2,1} = base;
+        for ii=1:nconditions
+            design_inf{2,ii+1} = [onsets{ii}' durations{ii}'];
+        end
+        save(outfile,'design_inf');
+    case 2 % SPM-FNIRS
+        outfile = spm_input('Output file name? ','+1','s','');
+        [null,~] = spm_input(outfile,'+1','d!','Saving file to disk');
+        save(outfile,'names','onsets','durations');
+end

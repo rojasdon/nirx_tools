@@ -1,7 +1,8 @@
 function nb = nirx_nearest_neighbors(chanpos)
-% finds nearest neighbor channels
-% chanpos = n x 3 positions of channels
-% output nb = nchan x nchan matrix of Euclidean distances
+% PURPOSE: finds nearest neighbor channels
+% INPUT: chanpos = n x 3 positions of channels
+% OUTPUT: nb = nchan x nchan matrix of Euclidean distances
+% SEE ALSO: nirx_read_chpos.m
 
 nchan = length(chanpos);
 for ii = 1:nchan

@@ -1,4 +1,4 @@
-function [first, ids, pos] = nirx_read_chpos(file)
+function [first, ids, pos] = nirx_read_optpos(file)
 % PURPOSE: reads a csv file of optode positions and returns locations
 % INPUTS:
 %   file = file to read, should be csv with single header line

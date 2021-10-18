@@ -96,9 +96,9 @@ axis image off; hold on;
 c = patch('vertices',cortex.vertices,'faces',cortex.faces,'edgecolor','none',...
         'facecolor',braincolor);
 axis image off; hold on;
-camlight right;
+camlight top;
 lighting gouraud;
-rotate3d on; view(90,0);
+rotate3d on; view(0,0);
 
 
 
