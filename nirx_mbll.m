@@ -20,7 +20,7 @@ od_w2 = od_w2./repmat(m_w2,npoints,1);
 distcoef = L.*(diag(dpf)*ec);
 distcoef = pinv(distcoef); % inv( e'*e )*e' in Huppert
 
-% Oxy, deoxy and total by least squares
+% Oxy, deoxy and total Hb by least squares
 Hb = distcoef * [od_w1'; od_w2'];
 HbO = Hb(1,:);
 HbR = Hb(2,:);
