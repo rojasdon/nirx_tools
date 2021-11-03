@@ -40,8 +40,7 @@ function ec = nirx_ecoeff(wl,varargin)
             allwl = min_ecoeff:1:max_ecoeff;
             iec(:,1) = spline(ecoeffs(:,1),ecoeffs(:,2),allwl);
             iec(:,2) = spline(ecoeffs(:,1),ecoeffs(:,3),allwl);
-            ind = find(allwl == wl);
-            ec = iec(ind,:);
+            ec = iec(allwl == wl,:);
             fprintf('Wavelength not found in table.\nUsing interpolated values for %d nm\n',wl);
         else
             error('%d nm is outside range of requested table!',wl);

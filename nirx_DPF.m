@@ -14,7 +14,7 @@ function dpf = nirx_DPF(wl,age)
 alpha = 223.3;
 beta = 0.05624;
 gamma = 0.8493;
-delta = -5.723E-7;
+delta = -5.723e-7;
 epsilon = 0.001245;
 zeta = -0.9025;
 

@@ -1,7 +1,7 @@
 % create/visualize experimental design
 clear;
 
-duration = [20 20 20 8]; % seconds
+duration = [30 30 30 15]; % seconds
 
 basename = 'NIRS-2021-09-28_001';
 [onsets, vals]=nirx_read_evt([basename '.evt']);
@@ -21,17 +21,17 @@ for ii=1:ncond
 end
 
 % task vectors and convolution with hrf
+% code needs to prevent onsets from extending beyond samples
 [hrf, p] = spm_hrf(hdr.sr); % check with spm_fnirs code
 vec = zeros(ncond,npoints);
 for cond = 1:ncond
     vec(cond,ons{cond}) = 1;
     for ii=1:duration(cond) - 1
         vec(cond,ons{cond} + ii) = 1;
-        tmpvec = conv(vec(cond,:),hrf,'full');
-        cut = length(tmpvec) - length(vec(cond,:));
-        tmpvec = tmpvec(1:end-cut);
-        vec(cond,:) = tmpvec;
     end
+    tmpvec = conv(vec(cond,:),hrf,'full');
+    tmpvec(npoints+1:end) = [];
+    vec(cond,:) = tmpvec;
 end
 
 % add column of ones for constant, to get intercept from model
@@ -41,7 +41,7 @@ vec = [ones(1,npoints); vec]';
 figure('color','w');
 imagesc(vec); axis square;
 ylabel('Samples');
-xticklabels({'Constant',1,2,3,4});
+xticklabels({'','Constant','',1,'',2,'',3,'',4,''});
 xlabel('Conditions');
 
 % channel regression (1st level analysis) - put this in separate function
