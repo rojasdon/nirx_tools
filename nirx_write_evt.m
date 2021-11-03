@@ -15,7 +15,7 @@ function nirx_write_evt(file,onsets,values)
             str2num(binvals(ii,3)),str2num(binvals(ii,4)),...
             str2num(binvals(ii,5)),str2num(binvals(ii,6)),...
             str2num(binvals(ii,7)),str2num(binvals(ii,8)));
-        if ii < onsets
+        if ii < length(onsets)
             fprintf(fp,'\n');
         end
     end  
