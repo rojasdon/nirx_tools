@@ -1,4 +1,11 @@
 % function to write nirx event file (*.evt) given list of onsets and values
+% INPUTS
+%   file   = .evt filename to write to disk
+%   onsets = vector (1 x n or n x 1) of onset times in samples
+%   values = vector (1 x n or n x 1) of trigger values, same length as
+%            onsets
+% OUTPUT
+%   a file written to disk with the name corresponding to "file" input
 function nirx_write_evt(file,onsets,values)
     
     % open file for writing
