@@ -12,7 +12,7 @@ function nirx_write_evt(file,onsets,values)
     fp = fopen(file,'w');
     
     % translate integers into binary
-    binvals = dec2bin(values);
+    binvals = dec2bin(values,8);
     binvals = fliplr(binvals); % reverse highest bit for nirx
     
     % write to tab delim file
