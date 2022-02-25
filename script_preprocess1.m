@@ -96,7 +96,7 @@ plot(hbo_co(1:4,:)'); axis tight;
 xlabel('Samples'); ylabel('\Delta hemoglobin (\muM)');
 legend({'1','2','3','4'});
 title('SD Corrected channels (HbO), baseline removed');
-print(h, '-djpeg', [filebase '_signals' qa_suffix]); close(h);
+print(h, '-djpeg', [filebase '_signals' qa_suffix]);
 
 % signal quality computation
 q = nirx_signal_quality(hdr,raw);
@@ -109,3 +109,4 @@ xlabel('Channels');
 ylabel('Wavelength (nM)');
 yticklabels({'',hdr.wl(1),'',hdr.wl(2),''})
 colormap(qamap);
+print(h, '-djpeg', [filebase '_qamap' qa_suffix]);
