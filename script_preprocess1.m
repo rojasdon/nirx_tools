@@ -110,3 +110,6 @@ ylabel('Wavelength (nM)');
 yticklabels({'',hdr.wl(1),'',hdr.wl(2),''})
 colormap(qamap);
 print(h, '-djpeg', [filebase '_qamap' qa_suffix]);
+
+% save interim processed data
+save([filebase '_hb_sd.mat'],'hbo_co','hbr_co','hbt_co','q');
