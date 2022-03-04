@@ -1,19 +1,23 @@
 function q = nirx_signal_quality(hdr,data)
-% purpose: output of various metrics used to evaluate signal quality
-% inputs:
-% hdr = header structure, from nirx_read_hdr.m
-% data = raw data, from nirx_read_wl.m
-% outputs:
-% q, a structure containing the following components:
-% q.quality = quality metric, comparable to the color coding in NIRStar
+% PURPOSE: output of various metrics used to evaluate signal quality
+% AUTHOR: Don Rojas, Ph.D.
+% INPUT:
+%   hdr = header structure, from nirx_read_hdr.m
+%   data = raw data, from nirx_read_wl.m
+% OUTPUT:
+%   q, a structure containing the following components:
+%   q.quality = quality metric, comparable to the color coding in NIRStar
 %             14.3 (see manual, section 8.1). Incorporates all other
 %             measures except Dark Noise. 0 = lost, 1 = Critical, 2 =
 %             acceptable, 3 = excellent
-% q.level = average signal levels per wavelength and channel
-% q.gain = channel gains
-% q.noise = coefficient of variation on q.level per channel and wl
-% q.dn = dark noise, measured on detectors
-% See: NIRStar manual section 8.1 and Table 2 for interpretations
+%   q.level = average signal levels per wavelength and channel
+%   q.gain = channel gains
+%   q.noise = coefficient of variation on q.level per channel and wl
+%   q.dn = dark noise, measured on detectors
+% SEE ALSO: NIRStar manual section 8.1 and Table 2 for interpretations
+
+% Revision history:
+% 03/04/2022 - added text output to show bad channels, if any
 
 % calculate level and noise measures
 q.level = squeeze(mean(data,2));
@@ -59,7 +63,8 @@ for wl = 1:length(hdr.wl)
         end
     end
 end
-% minimum quality measure is the metric per channel
+
+% lowest of 3 quality measures is the metric per channel
 q.quality = zeros(length(wl),hdr.nchan);
 for wl = 1:length(hdr.wl)
     for chn = 1:hdr.nchan
@@ -69,7 +74,11 @@ end
 % find/report questionable channels
 [wl_ind,bad_chan] = ind2sub(size(q.quality),find(q.quality <= 1));
 bad_chan = unique(bad_chan); % it only takes one bad wavelength
-fprintf('The following channels are likely bad:\n');
-for ii=1:length(bad_chan)
-    fprintf('Channel: %d\n',bad_chan(ii));
+if ~isempty(bad_chan)
+    fprintf('The following channels are likely bad:\n');
+    for ii=1:length(bad_chan)
+        fprintf('Channel: %d\n',bad_chan(ii));
+    end
+else
+    fprintf('All channels pass quality metrics.\n');
 end

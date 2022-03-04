@@ -4,6 +4,9 @@ function [hbo_corr,hbr_corr,hbt_corr] = nirx_motion_cbsi(hbo,hbr)
 % CITATION: Cui et al. (2009). Functional near infrared spectroscopy (NIRS) 
 %   signal improvement based on negative correlation between oxygenated 
 %   and deoxygenated hemoglobin dynamics. Neuroimage, 49(4), 3039-3046
+% SEE ALSO: Brigadoi et al. (2014). Motion artifacts in functional near-infrared spectroscopy: 
+%   a comparison of motion correction techniques applied to real cognitive
+%   data. Neuroimage, 85, 181-191. (Raises concerns about use of algorithm for HbR)
 % INPUTS:
 %   hbo = oxy-hemoglobin signals, N channel x N timepoint array
 %   hbr = deoy-hemoglobin signals, N channel x N timepoint array
