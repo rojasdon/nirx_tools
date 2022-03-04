@@ -17,11 +17,16 @@ function nirx_plot_optode3d(XYZ,S,N,varargin)
 % 'radius', the radius in mm of the circles to plot, a scalar: default = 5
 % 'offset', the amount of surface offset, in mm, for each optode: default =
 %       10
-% 'label', the string label for a colorbar. If supplied, a colobar is
-%   created with this label.
+% 'cbar', for colorbar. If supplied, a colorbar is
+%   created with this label in the next argument
 % EXAMPLE 1: nirx_plot_optode3d(XYZ,S,N); uses default settings
 % EXAMPLE 2: nirx_plot_optode3d(chpos,scalp.vertices,N, 'edgecolor',[1 1 0],'facecolor',[0 1 1],...
 %    'facealpha',.5); % changes defaults
+% Note: with optode labeling, currently you should use a lower alpha so
+%   that the labels are readable.
+% Revision History
+% 03/01/2022 - Added text label functionality, corrected bug with edge
+%              coloring that only allowed a single scalar
 
 % defaults
 hold on;
@@ -33,6 +38,7 @@ offset = 10; % slight offset in mm so circle surface does not intersect surface 
 theta = linspace(0,2*pi).';
 facelight = 'none';
 plotlegend = 0;
+plotlabels = 0;
 
 % check for minimum required inputs
 if nargin < 3
@@ -57,9 +63,12 @@ if ~isempty(varargin)
                     r = varargin{i+1};
                 case 'offset'
                     offset = varargin{i+1};
-                case 'label'
+                case 'cbar'
                     cbarlabel = varargin{i+1};
                     plotlegend = 1;
+                case 'labels'
+                    labels = varargin{i+1};
+                    plotlabels = 1;
                 otherwise
                     error('Invalid option!');
             end
@@ -102,8 +111,12 @@ for ii=1:Npnts
     point(3) = point(3) + offset * -n(2);
     T = null(n).';
     V = bsxfun(@plus,r*(cos(theta)*T(1,:)+sin(theta)*T(2,:)),point);
-    h = fill3(V(:,1),V(:,2),V(:,3),fc(ii), 'FaceAlpha', fa(ii),'EdgeColor',ec(ii,:),'linewidth',1.5);
+    h = fill3(V(:,1),V(:,2),V(:,3),fc(ii,:), 'FaceAlpha', fa(ii),'EdgeColor',ec(ii,:),'linewidth',1.5);
     h.FaceLighting = facelight;
+    if plotlabels
+        loc = double(point);
+        text(loc(1)+2,loc(2)+2,loc(3)+2,labels{ii}{:});
+    end
 end
 
 colormap; 

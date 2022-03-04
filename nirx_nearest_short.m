@@ -1,10 +1,15 @@
-% PURPOSE:  returns index of nearest short channel to a given long channel
-% INPUTS:   ldi, long detector index
-%           nb, nchan x nchan array of channel distances, see
-%           nirx_nearest_neigbors.m
-%           hdr, from nirx_read_hdr.m
-% OUTPUTS:  sdi, short channel index, among all channels in hdr
-function sdi = nirx_nearest_short(ldi,nb,hdr)
-    ld_sd_distances = nb(ldi,hdr.shortSDindices);
-    [~,ind] = min(ld_sd_distances);
-    sdi = hdr.shortSDindices(ind);
+% PURPOSE:  returns channel number of nearest short channel to a given long channel
+% INPUTS:   longpos, n x 3 array of long channel
+%           positions, from nirx_compute_chanlocs.m
+%           shortpos, n x 3 array of short channel positions,
+%           nirx_compute_chanlocs.m
+%           hdr, header from nirx_read_hdr.m
+% OUTPUTS:  scnn, short channel nearest neighbor, among all short channels,
+%           nlongchan x 1
+function scnn = nirx_nearest_short(shortpos,longpos,hdr)
+    scnn = zeros(length(longpos),1);
+    for ii=1:length(longpos)
+        dist = sqrt(sum(longpos(ii,:) - shortpos,2).^2);
+        [~,ind] = min(dist);
+        scnn(ii) = hdr.shortSDindices(ind);
+    end

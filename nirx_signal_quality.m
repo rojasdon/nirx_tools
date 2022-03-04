@@ -66,3 +66,10 @@ for wl = 1:length(hdr.wl)
         q.quality(wl,chn) = min(quality{wl,chn});
     end
 end
+% find/report questionable channels
+[wl_ind,bad_chan] = ind2sub(size(q.quality),find(q.quality <= 1));
+bad_chan = unique(bad_chan); % it only takes one bad wavelength
+fprintf('The following channels are likely bad:\n');
+for ii=1:length(bad_chan)
+    fprintf('Channel: %d\n',bad_chan(ii));
+end

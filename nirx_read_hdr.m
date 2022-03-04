@@ -13,6 +13,7 @@ function nirx = nirx_read_hdr(file,varargin)
 %   02/19/2020 - Updated to read NIRStar 15.2 header info - should be
 %                backward compatible with versions 14-15.1
 %   10/12/2021 - slight update to add long detector indices for ease of use
+%   03/02/2022 - added field ch_type to sort long vs short channels easily
 
 % TODO: 1. Add in cross talk read. It is only in headers for data files
 % with multiple sources activated simultaneously, since for sequential
@@ -219,6 +220,11 @@ if shortchan
     tmp = nirx.SDpairs; tmp(shortind,:) = [];
     nirx.longSDpairs = tmp;
     nirx.longSDindices = setdiff(1:nirx.nchan,nirx.shortSDindices);
+    sc = find(ismember(nirx.SDpairs(:,2),nirx.shortdetindex));
+    lc = setdiff(1:nirx.nchan,sc);
+    nirx.ch_type = cell(58,1);
+    nirx.ch_type(sc) = {'short'};
+    nirx.ch_type(lc) = {'long'};
 else
     nirx.shortSDpairs = [];
     nirx.longSDpairs = nirx.SDpairs;

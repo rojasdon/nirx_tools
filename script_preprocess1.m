@@ -16,10 +16,13 @@ qa_suffix = 'qa.jpg'; % suffix for quality assurance figures
 qamap = [1 1 1
          1 0 0
          1 1 0
-         0 1 0];
+         0 1 0]; % colorscale for quality assurance figure
+screen = get(0,'screensize'); % for setting figure size and location
+screen_h = screen(4);
+screen_w = screen(3);
          
 % Important for OD to HB conversion
-age = 23; % age in years
+age = 30; % age in years, should alter to actual age in script
 
 % required files
 posfile = 'optode_positions.csv';
@@ -33,7 +36,10 @@ nchans = size(raw,3);
 npoints = size(raw,2);
 
 % read events
-[onsets, vals] = nirx_read_evt([filebase '_corrected.evt']);
+% [onsets, vals] = nirx_read_evt([filebase '_corrected.evt']);
+
+% read channel configuration
+chpairs = nirx_read_chconfig(chconfig);
 
 %% basic preprocessing
 % convert optical measurements to hemoglobin units
@@ -47,69 +53,130 @@ hbt = hbo;
 [sd_dist,~,~] = nirx_sd_dist(filebase,[0 70],'mask','no'); % we don't care about good/bad here
 for chn = 1:nchans
     od = squeeze(raw(:,:,chn));
-    [hbo(chn,:),hbr(chn,:),hbt(chn,:)] = nirx_mbll(od,dpf,ec);
-    % alternatively, use sd_dist in mbll call (maybe more accurate, if s-d distance is known)
-    % [hbo(chn,:),hbr(chn,:),hbt(chn,:)] = nirx_mbll(od,dpf,ec,sd_dist(chn));
+    sd = chpairs(chn,2:3);
+    cdist = sd_dist{sd(1)}(sd(2));
+    % MBLL, giving channel distance in cm
+    [hbo(chn,:),hbr(chn,:),hbt(chn,:)] = nirx_mbll(od,dpf,ec,cdist/10); % Beer-Lambert Law
 end
 
 % short channel regression to correct for scalp influences
 [heads,ids,pos] = nirx_read_optpos(posfile);
 chns = nirx_read_chconfig(chconfig);
-chanpos = nirx_compute_chanlocs(ids,pos,chns);
-nb = nirx_nearest_neighbors(chanpos);
+[longpos,shortpos] = nirx_compute_chanlocs(ids,pos,chns,hdr.shortdetindex);
 nld = length(hdr.longSDindices);
+scnn = nirx_nearest_short(shortpos,longpos,hdr);
 hbo_c = zeros(nld,npoints);
+scalp_o = hbo_c;
+scalp_r = hbo_c;
 hbr_c = hbo_c;
 hbt_c = hbo_c;
 for chn = 1:nld
-    sdi = nirx_nearest_short(hdr.longSDindices(chn),nb,hdr);
-    sdo = hbo(sdi,:);
-    sdr = hbr(sdi,:);
-    hbo_c(chn,:) = nirx_short_regression(hbo(hdr.longSDindices(chn),:),sdo);
-    hbr_c(chn,:) = nirx_short_regression(hbr(hdr.longSDindices(chn),:),sdr);
+    sdo = hbo(scnn(chn),:);
+    sdr = hbr(scnn(chn),:);
+    % do regression, save scalp signals for plotting
+    [hbo_c(chn,:),~,scalp_hbo(chn,:)] = nirx_short_regression(hbo(hdr.longSDindices(chn),:),sdo);
+    [hbr_c(chn,:),~,scalp_hbr(chn,:)] = nirx_short_regression(hbr(hdr.longSDindices(chn),:),sdr);
     hbt_c(chn,:) = hbo_c(chn,:) + hbr_c(chn,:);
 end
 
-% remove dc offsets
-m_hbo_c = mean(hbo_c,2);
-m_hbr_c = mean(hbr_c,2);
-m_hbt_c = mean(hbt_c,2);
-hbo_co = hbo_c - repmat(m_hbo_c,1,npoints);
-hbr_co = hbr_c - repmat(m_hbr_c,1,npoints);
-hbt_co = hbt_c - repmat(m_hbt_c,1,npoints);
+% low pass filter
+hbo_f = nirx_filter(hbo_c,hdr,'low',.4,'order',4);
+hbr_f = nirx_filter(hbr_c,hdr,'low',.4,'order',4);
 
-% plot to compare pre/post short channel regression and offset correction
+% motion correction using CBSI method
+[hbo_mcorr,hbr_mcorr,hbt_mcorr]=nirx_motion_cbsi(hbo_f,hbr_f);
+
+% remove dc offsets, in case of uncorrected hb just for plotting purposes
+hbo_o = nirx_offset(hbo);
+hbr_o = nirx_offset(hbr);
+hbo_co = nirx_offset(hbo_c);
+hbr_co = nirx_offset(hbo_c);
+hbo_mcorr_o = nirx_offset(hbo_mcorr);
+hbr_mcorr_o = nirx_offset(hbr_mcorr);
+scalp_hbo_o = nirx_offset(scalp_hbo);
+scalp_hbr_o = nirx_offset(scalp_hbr);
+
+% plot to compare pre/post short channel regression on first long
+% channel, along with estimated scalp signal
+longchans = find(ismember(hdr.ch_type,'long'));
 h = figure('color','w');
-subplot(3,1,1);
-plot(hbo(1:4,:)'); axis tight;
-xlabel('Samples'); ylabel('\Delta hemoglobin (\muM)');
-legend({'1','2','3','4'});
-title('Uncorrected channels (HbO)');
+set(gcf,'Position',[ceil(screen_w/2) ceil(screen_h/2) 1024 512]);
+subplot(2,1,1);
+plot(hbo_o(longchans(1),:)'+.002); axis tight;
 hold on;
-subplot(3,1,2);
-plot(hbo_c(1:4,:)'); axis tight; 
+plot(scalp_hbo_o(longchans(1),:)'+.001);
+plot(hbo_co(longchans(1),:)');
 xlabel('Samples'); ylabel('\Delta hemoglobin (\muM)');
-legend({'1','2','3','4'});
-title('SD Corrected channels (HbO)');
-subplot(3,1,3);
-plot(hbo_co(1:4,:)'); axis tight; 
+legend({'Original','Scalp Estimate','Corrected'});
+title('HbO Channel 1');
+subplot(2,1,2);
+plot(hbr_o(longchans(1),:)'+.002); axis tight;
+hold on;
+plot(scalp_hbr_o(longchans(1),:)'+.001);
+plot(hbr_co(longchans(1),:)');
 xlabel('Samples'); ylabel('\Delta hemoglobin (\muM)');
-legend({'1','2','3','4'});
-title('SD Corrected channels (HbO), baseline removed');
-print(h, '-djpeg', [filebase '_signals' qa_suffix]);
+legend({'Original','Scalp Estimate','Corrected'});
+title('HbR Channel 1');
+print(h, '-djpeg', [filebase '_shortcorr' qa_suffix]);
+
+% plot to compare short channel corrected only to short + motion corrected
+% signals
+h = figure('color','w');
+set(gcf,'Position',[ceil(screen_w/2) ceil(screen_h/2) 1024 512]);
+subplot(2,1,1);
+plot(hbo_co(longchans(1),:)'+.002); axis tight;
+hold on;
+plot(hbo_mcorr_o(longchans(1),:)');
+xlabel('Samples'); ylabel('\Delta hemoglobin (\muM)');
+legend({'Short Chan Only','Short + Motion'});
+title('HbO Channel 1');
+subplot(2,1,2);
+plot(hbr_co(longchans(1),:)'+.002); axis tight;
+hold on;
+plot(hbr_mcorr_o(longchans(1),:)');
+xlabel('Samples'); ylabel('\Delta hemoglobin (\muM)');
+legend({'Short Chan Only','Short + Motion'});
+title('HbR Channel 1');
+print(h, '-djpeg', [filebase '_motion+short' qa_suffix]);
+
+% plot all channels with no corrections
+h = figure('color','w'); hold on; 
+set(gcf,'Position',[ceil(screen_w/2) ceil(screen_h/2) 1024 512]);
+scaling = 1e3; spacing = 2;
+for chn=1:length(longchans)
+    plot(hbo_o(longchans(chn),:)' * scaling + (chn*spacing)); axis tight;
+end
+yticklabels(string(5:5:50));
+xlabel('Samples'); ylabel({'\Delta hemoglobin (\muM)';'Channel'});
+print(h, '-djpeg', [filebase '_all_uncorrected' qa_suffix]);
+
+% plot all channels, short and motion corrected
+h = figure('color','w'); hold on; 
+set(gcf,'Position',[ceil(screen_w/2) ceil(screen_h/2) 1024 512]);
+scaling = 1e3; spacing = 2;
+for chn=1:length(longchans)
+    plot(hbo_mcorr_o(chn,:)' * scaling + (chn*spacing)); axis tight;
+end
+yticklabels(string(5:5:50));
+xlabel('Samples'); ylabel({'\Delta hemoglobin (\muM)';'Channel'});
+print(h, '-djpeg', [filebase '_all_corrected' qa_suffix]);
 
 % signal quality computation
-q = nirx_signal_quality(hdr,raw);
+q = nirx_signal_quality(hdr,raw); % todo: need to use this to exclude shorts from regression
 
 % signal quality figure
 h = figure('color','w');
-imagesc(q.quality);
+set(gcf,'Position',[ceil(screen_w/2) ceil(screen_h/2) 1024 512]);
+imagesc(q.quality); caxis([0 3]);
 title('NIRx Quality Metric Map');
 xlabel('Channels');
 ylabel('Wavelength (nM)');
 yticklabels({'',hdr.wl(1),'',hdr.wl(2),''})
 colormap(qamap);
+colorbar('Ticks',[0,1,2,3,4],...
+         'TickLabels',{'Lost','Critical','Acceptable','Excellent'})
 print(h, '-djpeg', [filebase '_qamap' qa_suffix]);
 
 % save interim processed data
-save([filebase '_hb_sd.mat'],'hbo_co','hbr_co','hbt_co','q');
+hbt_mcorr_o = hbo_mcorr_o + hbr_mcorr_o;
+save([filebase '_hb_sd.mat'],'hbo_mcorr_o','hbr_mcorr_o','hbt_mcorr_o','q');

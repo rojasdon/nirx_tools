@@ -1,4 +1,4 @@
-function [chdist,good,stats] = nirx_sd_dist(basename,thresholds,selection,output)
+function [sd_dist,good,stats] = nirx_sd_dist(basename,thresholds,selection,output)
 % function to calculate distances between S-D pairs
 % inputs:
 %   basename = file name base w/o ext
@@ -15,11 +15,18 @@ function [chdist,good,stats] = nirx_sd_dist(basename,thresholds,selection,output
 % FIXME: 1) probably need to sort the S and D indices in case someone inputs S
 % and D out of ascending order in csv file - see
 % script_visualize_chan_dist.m
+% 2) change so position file and chfile are inputs, with default
+% 3) move s vs. d determination code out of this and other functions
+
+% Revision history
+% 03/01/2022 - fixed bug related to new short channel indexing
 
 % defaults
 posfile = 'optode_positions.csv';
 chfile = 'ch_config.txt';
 outext = '_dsel';
+dothis = 0;
+short_dist = 8; % 8 mm fixed short channel distance (NIRx system determined)
 
 d_thresh = thresholds; % dist in mm
 if length(d_thresh) < 2
@@ -47,30 +54,69 @@ end
 % basic info
 ind = find(mask);
 [Sfull,Dfull]=ind2sub(size(mask),ind);
-full_nchan = length(hdr.SDkey);
 
-% sources vs. detectors in posfile
+% sources vs. detectors in posfile, accounting for numbering being out of
+% order in csv file
 sind = [];
-dind = [];
+snum = [];
+ldind = [];
+ldnum = [];
+sdind = [];
+sdnum = [];
 for ii=1:length(lbl)
     if lbl{ii}{1}(1)=='S'
         sind = [sind ii];
+        snum = [snum str2double(lbl{ii}{1}(2:end))];
+    elseif lbl{ii}{1}(1)=='D'
+        if ~isempty(find(ismember(hdr.shortdetindex,...
+                str2double(lbl{ii}{1}(2:end)))))
+            sdind = [sdind ii];
+            sdnum = [sdnum str2double(lbl{ii}{1}(2:end))];
+        else
+            ldind = [ldind ii];
+            ldnum = [ldnum str2double(lbl{ii}{1}(2:end))];
+        end
     end
 end
-dind = setdiff(1:length(lbl),sind);
 Spos = pos(sind,:);
-Dpos = pos(dind,:);
+allind = [ldind sdind]; % shorts will be last
+allnum = [ldnum sdnum];
+Dpos = pos(allind,:);
 
-% channel distances
-for ii = 1:length(Sfull)
-    fprintf('%d\n',ii);
-    Sloc = Spos(Sfull(ii),:);
-    Dloc = Dpos(Dfull(ii),:);      
-    chdist(ii,:) = sqrt(sum((Sloc - Dloc).^2, 2));
+% channel distances - short channel distance is constant
+sd_dist = {};
+for ii = 1:length(snum)
+    tmp = [];
+    source_ind = find(ismember(snum,ii));
+    Sloc = Spos(source_ind,:);
+    for jj = 1:length(allnum)
+        det_ind = find(ismember(allnum,jj));
+        Dloc = Dpos(det_ind,:);
+        if find(ismember(sdnum,jj))
+            tmp = [tmp short_dist];
+        else
+            tmp = [tmp sqrt(sum((Sloc - Dloc).^2, 2))];
+        end
+        fprintf('Source %d - Detector %d: %.2f mm\n',ii,jj,tmp(jj));
+    end
+    sd_dist{ii} = tmp;
 end
+good = [];
+stats = []; % remove stats from call - move to qa function
 
+%%% need to go through nirx_read_optpos.m, nirx_compute_chanlocs.m,
+%%% nirx_nearest_short.m and nirx_nearest_neighbors.m and check
+%%% computations.
+% also remove the nirx_chan_dist.m and nirx_read_chpos.m functions from
+% circulation because the sd_dist and optpos functions replace them with
+% better names
+
+if dothis
+
+% limit to those in mask if requested
+    
 % mask of distances by threshold
-good = find((chdist <= d_thresh(2)) & (chdist >= d_thresh(1)));
+good = find((sd_dist <= d_thresh(2)) & (chdist >= d_thresh(1)));
 
 % reporting by distance
 inds = {};
@@ -93,7 +139,7 @@ fprintf('Good channels by threshold distances: %d\n', length(good));
 
 % report gain info on potentially good chans
 newgains = hdr.gains(good);
-fprintf('# chans within distance threshold with gain <=7: %d\n', length(find(newgains<=7)));
+fprintf('# S-D pairs within distance threshold with gain <=7: %d\n', length(find(newgains<=7)));
 fprintf('For those channels, mean +/- SD gain are: %.2f +/- %.2f\n', mean(newgains(newgains<=7)),std(double(newgains(newgains<=7))));
 fprintf('For all %d channels in mask, mean +/- SD gain: %.2f +/- %.2f\n', length(good), mean(newgains(:)),std(double(newgains(:))));
 
@@ -137,4 +183,5 @@ if strcmpi(output,'yes')
     % copy wl* files to new names for convenience
     copyfile([basename '.wl1'],[basename outext '.wl1']);
     copyfile([basename '.wl2'],[basename outext '.wl2']);
+end
 end

@@ -1,11 +1,11 @@
-function fraw = nirx_filter(raw,hdr,type,cutoffs,varargin)
+function fdata = nirx_filter(data,hdr,type,cutoffs,varargin)
 % NAME:      nirx_filter.m
 % AUTHOR:    Don Rojas, Ph.D.
 % PURPOSE:   a basic filtering function for fnirs timeseries
 %            that will provide bandpass filtering of
 %            the butterworth type IIR in forward/reverse fashion for zero
 %            phase-shift.
-% INPUTS:    wl1,wl2 = nirx waveforms, e.g., from nirx_read_wl.m
+% INPUTS:    data = N channel x N timepoint waveforms, e.g., from nirx_read_wl.m
 %            hdr = header from nirx_read_hdr.m
 %            cutoffs = [lowcut highcut] in Hz, or single number for low,
 %            high and moving filter types. For moving filter, the number is
@@ -13,13 +13,15 @@ function fraw = nirx_filter(raw,hdr,type,cutoffs,varargin)
 %            type = filter type ('low','high', 'moving' or 'band')
 % OPTIONAL:  'order', filter order 3 = default, if type = 'moving', then
 %             order is ignored
-% OUTPUTS:   fraw = filtered version of data
-% USAGE: (1) fraw = nirx_filter(raw,hdr,'band',[.01 .5]);
+% OUTPUTS:   fdata = filtered version of data
+% USAGE: (1) fhbo = nirx_filter(hbo,hdr,'low',.4,'order',4);
 % NOTES: (1) be careful applying this to data uncritically. If bad results
 %            are obtained, can evaluate B,A transfer coefficients using freqs(B,A);
 % SEE ALSO: nirx_read_wl.m, nirx_read_hdr.m
 
 % HISTORY: 07/13/16 - first version, based on megcode filterer.m function
+%          03/03/22 - updated to take data more generically, rather than
+%           only raw wl data
 
 % FIXME: check for installation of signal processing toolbox here
 
@@ -54,10 +56,8 @@ end
 
 % basic signal info
 sr      = hdr.sr;
-wl1     = squeeze(raw(1,:,:));
-wl2     = squeeze(raw(2,:,:));
-nchn    = size(raw,3);
-npnts   = size(raw,2);
+nchn    = size(data,1);
+npnts   = size(data,2);
 
 % create appropriate butterworth filter coefficients
 switch type
@@ -101,36 +101,11 @@ A = double(A);
 
 % apply filter to data, zero padding to prevent edge problems with moving
 % filter
+fdata = zeros(size(data));
 fprintf('\nFiltering channel');
-fwl1 = zeros(size(wl1));
-fwl2 = fwl1;
-pads = zeros(ceil(hdr.sr),nchn);
-% padding + offset removal
-if strcmpi(type,'moving')
-    fwl1 = [pads; fwl1; pads];
-    fwl2 = fwl1;
-    wl1_mean = mean(wl1);
-    wl2_mean = mean(wl2);
-    wl1 = [pads; wl1-repmat(wl1_mean,npnts,1); pads];
-    wl2 = [pads; wl2-repmat(wl2_mean,npnts,1); pads];
-end
 for chn = 1:nchn
     fprintf('\nFiltering channel: %d', chn);
     % forward and reverse filter for zero phase-shift
-    fwl1(:,chn) = filtfilt(B, A, double(wl1(:,chn)));
-    fwl2(:,chn) = filtfilt(B, A, double(wl2(:,chn)));
-end
-% remove zero padding and add back offset
-if strcmpi(type,'moving')
-    fwl1 = fwl1(ceil(hdr.sr)+1:ceil(hdr.sr)+npnts,:);
-    fwl1 = fwl1 + repmat(wl1_mean,npnts,1);
-    fwl2 = fwl2(ceil(hdr.sr)+1:ceil(hdr.sr)+npnts,:);
-    fwl2 = fwl2 + repmat(wl2_mean,npnts,1);
+    fdata(chn,:) = filtfilt(B, A, double(data(chn,:)));
 end
 fprintf('\ndone!\n');
-
-% output
-fraw(1,:,:)=fwl1;
-fraw(2,:,:)=fwl2;
-
-end

@@ -1,6 +1,8 @@
 % script to convert an spm_fnirs formatted optode position and configuration files 
 % into a Homer2 compatible SD file
 
+% note: I have no idea what homer2 expects with short channels, so beware!
+
 clear;
 
 % defaults

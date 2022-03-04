@@ -1,4 +1,5 @@
-% inspired by motion correction pca in homer
+% inspired by motion correction pca in homer. not a completed function!
+% Just a beginning of an idea.
 
 hdr=nirx_read_hdr('029-2015-12-05_001.hdr');
 [raw, ~, ~,~]=nirx_read_wl('029-2015-12-05_001',hdr);

@@ -18,6 +18,8 @@ function [chdist,good,stats] = nirx_chan_dist(basename,thresholds,selection,outp
 % 2) should rename function to nirx_optode_dist or nirx_sd_dist because
 % the optodes are not the channel locations. Separate function,
 % nirx_compute_chanlocs.m for channel locations from s-d pairings
+% Revision history
+% 03/01/2022 - fixed bug related to new short channel indexing
 
 % defaults
 posfile = 'optode_positions.csv';
@@ -54,15 +56,22 @@ full_nchan = length(hdr.SDkey);
 
 % sources vs. detectors in posfile
 sind = [];
-dind = [];
+ldind = [];
+sdind = [];
 for ii=1:length(lbl)
     if lbl{ii}{1}(1)=='S'
         sind = [sind ii];
+    elseif lbl{ii}{1}(1)=='D'
+        if ~isempty(find(ismember(hdr.shortdetindex,...
+                str2double(lbl{ii}{1}(2:end)))))
+            sdind = [sdind ii];
+        else
+            ldind = [ldind ii];
+        end
     end
 end
-dind = setdiff(1:length(lbl),sind);
 Spos = pos(sind,:);
-Dpos = pos(dind,:);
+Dpos = pos(ldind,:);
 
 % channel distances
 for ii = 1:length(Sfull)
