@@ -29,7 +29,7 @@ posfile = 'optode_positions.csv';
 chconfig = 'ch_config.txt';
 
 % load nirx data
-filebase = 'NIRS-2021-09-28_002';
+filebase = 'NIRS-2021-09-28_001';
 hdr = nirx_read_hdr([filebase '.hdr']);
 [raw, cols, S,D] = nirx_read_wl(filebase,hdr);
 nchans = size(raw,3);
@@ -62,7 +62,9 @@ end
 % motion correction using CBSI method - need to do this prior to short
 % regression to avoid introducing motion from short channels into long
 % channels
-[hbo_mcorr,hbr_mcorr,hbt_mcorr]=nirx_motion_cbsi(hbo,hbr);
+% [hbo_mcorr,hbr_mcorr,hbt_mcorr]=nirx_motion_cbsi(hbo,hbr);
+hbo_mcorr = nirx_motion_spline(hbo,hdr);
+hbr_mcorr = nirx_motion_spline(hbr,hdr);
 
 % short channel regression to correct for scalp influences
 [heads,ids,pos] = nirx_read_optpos(posfile);
