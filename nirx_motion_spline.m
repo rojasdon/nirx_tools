@@ -28,6 +28,10 @@ if mod(win,2) == 1
     win = win + 1; % ensures an odd number
 end
 Tset = 0;
+minWin = .3; % min and max segment lengths used for offset corrections, in sec
+maxWin = 3; 
+minWin = ceil(minWin * hdr.sr); % min and max segment lengths converted to samples
+maxWin = ceil(maxWin * hdr.sr);
 
 % parse input and set default options
 if nargin < 2
@@ -95,26 +99,27 @@ for chn = 1:nchan
     
     % model with spline interpolation
     corrected_segments = cell(n_segments,1);
+    spline_seg = cell(n_segments,1);
     for seg=1:n_segments
         % spline model
-        curr_seg_mean = mean(segments{seg});
-        pp=csaps(1:length(segments{seg}),segments{seg},p,1:length(segments{seg}));
-        % subtract model from artifact segments
-        if seg > 1
-            prev_seg_mean = mean(segments{seg - 1});
-            offset = curr_seg_mean - prev_seg_mean;
-            corrected_segments{seg} = (segments{seg} - pp) + offset;
-        else
-            corrected_segments{seg} = (segments{seg} - pp) + curr_seg_mean;
-        end
-        % in original, if seg len < 30, then a = mean of prev, b mean of
-        % curr, and d = b - a.
- 
+        splineSeg{seg} = csaps(1:length(segments{seg}),segments{seg},p,1:length(segments{seg}));
+         % subtract model from artifact segments
+        corrected_segments{seg} = (segments{seg} - splineSeg{seg});
     end
 
-    % apply correction to waveform
+    % apply correction to waveform segments, scaling as appropriate
     for seg=1:n_segments
-        cdata(chn,artifact_starts(seg):artifact_stops(seg)) = corrected_segments{seg};
+        curr_seg_mean = mean(segments{seg});
+        % if first sample is an artifact
+        % if last sample is an artifact
+        % if sample is surrounded by good data
+        if seg == 1
+            prev_seg_mean = mean(chandat(artifact_starts(seg)-maxWin:artifact_starts - 1));
+        else
+            prev_seg_mean = mean(chandat(artifact_stops(seg - 1) + 1:artifact_starts(seg) - 1));
+        end
+        cdata(chn,artifact_starts(seg):artifact_stops(seg)) = ...
+            corrected_segments{seg} - curr_seg_mean + prev_seg_mean;
     end
 
 end
