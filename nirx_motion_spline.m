@@ -17,7 +17,6 @@
 %       default = 3s
 % OUTPUT:
 %   cdata, N channel x N timepoint nirs timeseries, motion corrected
-
 function cdata = nirx_motion_spline(data,hdr,varargin)
 
 % defaults
@@ -28,10 +27,10 @@ if mod(win,2) == 1
     win = win + 1; % ensures an odd number
 end
 Tset = 0;
-minWin = .3; % min and max segment lengths used for offset corrections, in sec
-maxWin = 3; 
-minWin = ceil(minWin * hdr.sr); % min and max segment lengths converted to samples
-maxWin = ceil(maxWin * hdr.sr);
+
+% this is alpha and beta in Table 1, aka min (alpha) and max (beta) window lengths
+minWin = ceil(1/3 * hdr.sr); % min and max segment lengths, in samples
+maxWin = ceil(2 * hdr.sr); % from .33 to 2x the sample rate, rounded up
 
 % parse input and set default options
 if nargin < 2
@@ -107,9 +106,15 @@ for chn = 1:nchan
         corrected_segments{seg} = (segments{seg} - splineSeg{seg});
     end
 
+    % need to implement 2.2.6 Table 1 scaling from Scholkmann here to avoid level 
+    % problems caused by subtraction of the spline model from the artifact segments - 
+    % i.e., 9 cases considered, calculating alpha and beta based
+    % on time and sampling rates. Note that lambda in the table is the
+    % length of segment
+
     % apply correction to waveform segments, scaling as appropriate
     for seg=1:n_segments
-        curr_seg_mean = mean(segments{seg});
+        curr_seg_mean = mean(corrected_segments{seg});
         % if first sample is an artifact
         % if last sample is an artifact
         % if sample is surrounded by good data
