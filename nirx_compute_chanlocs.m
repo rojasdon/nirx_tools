@@ -66,4 +66,4 @@ for ii = 1:nchan
 end
 
 % short channels
-shortpos = SDpos; % just use the detector location
+shortpos = SDpos; % just use the detector locations

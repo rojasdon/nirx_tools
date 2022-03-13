@@ -59,6 +59,11 @@ for chn = 1:nchans
     [hbo(chn,:),hbr(chn,:),hbt(chn,:)] = nirx_mbll(od,dpf,ec,cdist/10); % Beer-Lambert Law
 end
 
+% signal quality computation - here to exclude bad short channels, but
+% later for long channels too
+[q, bad] = nirx_signal_quality(hdr,raw);
+bad_shorts = find(ismember(hdr.shortSDindices,bad));
+
 % motion correction using CBSI method - need to do this prior to short
 % regression to avoid introducing motion from short channels into long
 % channels
@@ -71,7 +76,7 @@ end
 chns = nirx_read_chconfig(chconfig);
 [longpos,shortpos] = nirx_compute_chanlocs(ids,pos,chns,hdr.shortdetindex);
 nld = length(hdr.longSDindices);
-scnn = nirx_nearest_short(shortpos,longpos,hdr);
+scnn = nirx_nearest_short(shortpos,longpos,hdr,bad_shorts);
 hbo_c = zeros(nld,npoints);
 scalp_o = hbo_c;
 scalp_r = hbo_c;
@@ -167,9 +172,6 @@ end
 yticklabels(string(5:5:50));
 xlabel('Samples'); ylabel({'\Delta hemoglobin (\muM)';'Channel'});
 print(h, '-djpeg', [filebase '_all_corrected' qa_suffix]);
-
-% signal quality computation
-q = nirx_signal_quality(hdr,raw); % todo: need to use this to exclude shorts from regression
 
 % signal quality figure
 h = figure('color','w');
