@@ -1,11 +1,22 @@
-% purpose: to apply glm, multiple linear regression to nirs data
-% inputs
+% PURPOSE: to apply glm, multiple linear regression to nirs data
+% INPUTS:
 %   X, design structure, see nirx_design_matrix.m, must have:
 %   X.X, design matrix
 %   X.serial, serial correlation correction method, if desired
 %       ('none'|'AR')
 %   dat, nsamples x nchannels nirs data (e.g., HbO). Send different
 %       hemoglobin estimates through separate analyses.
+% OUTPUTS:
+%   stat, output (nchan) structure containing (see multregr.m for details)
+%       .beta
+%       .r2
+%       .SEb
+%       .pvals
+%       .e 
+%   X, structure containing Xf, AR filtered design matrix
+% CITATION: Barker et al.(2013). Autoregressive model based algorithm for correcting motion 
+%   and serially correlated errors in fNIRS, Biomedical Optics Express, 4,
+%   1366-1379.
 % TODO: allow matlab built in ar.m function if installed
 function [stat,X] = nirx_1stlevel(X,dat)
 
