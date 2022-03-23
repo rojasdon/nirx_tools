@@ -1,5 +1,5 @@
-% purpose: to create a design matrix suitable for glm/regression
-% inputs:
+% PURPOSE: to create a design matrix suitable for glm/regression
+% INPUTS:
 %   X, structure containing:
 %   X.basis, 'hrf', only option for now
 %   X.dur, duration of events, in seconds (1 x n condition vector)
@@ -12,8 +12,8 @@
 %   X.implicit, 'yes'|'no', implicit baselines ('yes') do not model the
 %       rest, avoiding overfitting. To include an explicit baseline
 %       condition, this should be 'no'.
-% outputs:
-%   X.X, new field X is design matrix
+% OUTPUTS:
+%   X.X, new added field X is design matrix
 function X = nirx_design_matrix(X)
 % TODO: allow more than canonical hrf
 

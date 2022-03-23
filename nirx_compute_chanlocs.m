@@ -1,15 +1,15 @@
 function [longpos,shortpos] = nirx_compute_chanlocs(ids,pos,chns,short_indices)
-% function computes midpoints between two optodes 
-% as channel locations.
+% PURPOSE: function computes midpoints between two optodes 
+%   as channel locations.
 % INPUTS:
-% ids = 1 x n array of generic optode labels, S1...Sn, D1...Dn
-% pos = n x 3 array of positions
-% chns = n x 2 array of channel definitions
-% short_indices = 1 x n array of short detector indices from
-%   nirx_read_hdr.m
+%   ids = 1 x n array of generic optode labels, S1...Sn, D1...Dn
+%   pos = n x 3 array of positions
+%   chns = n x 2 array of channel definitions
+%   short_indices = 1 x n array of short detector indices from
+%       nirx_read_hdr.m
 % OUTPUTS:
-% longpos = n x 3 array of long channel locations
-% shortpos = same as longpos, but short channels
+%   longpos = n x 3 array of long channel locations
+%   shortpos = same as longpos, but short channels
 
 % NOTE: the midpoint on a straight line isn't accurate given that the
 % points lie on a surface. Some/many will be inside the head.
@@ -66,4 +66,4 @@ for ii = 1:nchan
 end
 
 % short channels
-shortpos = SDpos; % just use the detector location
+shortpos = SDpos; % just use the detector locations

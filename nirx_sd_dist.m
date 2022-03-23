@@ -1,11 +1,11 @@
 function [sd_dist,good,stats] = nirx_sd_dist(basename,thresholds,selection,output)
-% function to calculate distances between S-D pairs
-% inputs:
+% PURPOSE: function to calculate distances between S-D pairs
+% INPUTS:
 %   basename = file name base w/o ext
 %   thresholds = 1 x 2 vector of lower and upper threshold in mm
 %   selection = 'all' for all possible chans, or 'mask' for those in mask
 %   output = 'yes' to write new corrected hdr and wl files
-% outputs:
+% OUTPUTS:
 %   chdist = channel distances, nchan x 1
 %   good = indices of "good" channels by distance, reference to all or mask
 %          as per thresholds setting
@@ -13,13 +13,13 @@ function [sd_dist,good,stats] = nirx_sd_dist(basename,thresholds,selection,outpu
 %           extra reporting capability
 
 % FIXME: 1) probably need to sort the S and D indices in case someone inputs S
-% and D out of ascending order in csv file - see
-% script_visualize_chan_dist.m
-% 2) change so position file and chfile are inputs, with default
-% 3) move s vs. d determination code out of this and other functions
+%   and D out of ascending order in csv file - see
+%   script_visualize_chan_dist.m
+%   2) change so position file and chfile are inputs, with default
+%   3) move s vs. d determination code out of this and other functions
 
 % Revision history
-% 03/01/2022 - fixed bug related to new short channel indexing
+%   03/01/2022 - fixed bug related to new short channel indexing
 
 % defaults
 posfile = 'optode_positions.csv';

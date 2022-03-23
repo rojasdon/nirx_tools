@@ -1,4 +1,4 @@
-function q = nirx_signal_quality(hdr,data)
+function [q,bad] = nirx_signal_quality(hdr,data)
 % PURPOSE: output of various metrics used to evaluate signal quality
 % AUTHOR: Don Rojas, Ph.D.
 % INPUT:
@@ -14,10 +14,13 @@ function q = nirx_signal_quality(hdr,data)
 %   q.gain = channel gains
 %   q.noise = coefficient of variation on q.level per channel and wl
 %   q.dn = dark noise, measured on detectors
+%   bad = list of bad channels, but with no details, derived from q.
 % SEE ALSO: NIRStar manual section 8.1 and Table 2 for interpretations
 
 % Revision history:
 % 03/04/2022 - added text output to show bad channels, if any
+% 03/13/2022 - added optional bad channel output for convenient list of bad
+%              channels
 
 % calculate level and noise measures
 q.level = squeeze(mean(data,2));
@@ -72,12 +75,12 @@ for wl = 1:length(hdr.wl)
     end
 end
 % find/report questionable channels
-[wl_ind,bad_chan] = ind2sub(size(q.quality),find(q.quality <= 1));
-bad_chan = unique(bad_chan); % it only takes one bad wavelength
-if ~isempty(bad_chan)
+[wl_ind,bad] = ind2sub(size(q.quality),find(q.quality <= 1));
+bad = unique(bad); % it only takes one bad wavelength
+if ~isempty(bad)
     fprintf('The following channels are likely bad:\n');
-    for ii=1:length(bad_chan)
-        fprintf('Channel: %d\n',bad_chan(ii));
+    for ii=1:length(bad)
+        fprintf('Channel: %d\n',bad(ii));
     end
 else
     fprintf('All channels pass quality metrics.\n');

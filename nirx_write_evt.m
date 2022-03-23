@@ -1,4 +1,4 @@
-% function to write nirx event file (*.evt) given list of onsets and values
+% PURPOSE: function to write nirx event file (*.evt) given list of onsets and values
 % INPUTS
 %   file   = .evt filename to write to disk
 %   onsets = vector (1 x n or n x 1) of onset times in samples

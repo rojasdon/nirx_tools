@@ -7,8 +7,9 @@
 %          3. dpf, differential pathlength factor, 1x2 in form [wl1 wl2]
 % OUTPUTS: 1. HbO, HbR, HbT - oxy, deoxy- and total hemoglobin, in
 %             micromolar (uM) concentration
-% NOTES: Formula conventions from Strangeman et al. (2003. Neuroimage,
-%        865-879.
+% CITATION: Strangman et al. (2003). Factors affecting the accuracy 
+%    of near-infrared spectroscopy concentration calculations for 
+%    focal changes in oxygenation parameters Neuroimage, 4, 865-879.
 function [HbO,HbR,HbT] = nirx_mbll(od,dpf,ec,varargin)
 % defaults
 if nargin > 3
