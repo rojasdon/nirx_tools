@@ -62,9 +62,9 @@ end
 % motion correction using CBSI method - need to do this prior to short
 % regression to avoid introducing motion from short channels into long
 % channels
-[hbo_mcorr,hbr_mcorr,hbt_mcorr]=nirx_motion_cbsi(hbo,hbr);
-% hbo_mcorr = nirx_motion_spline(hbo,hdr);
-% hbr_mcorr = nirx_motion_spline(hbr,hdr);
+% [hbo_mcorr,hbr_mcorr,hbt_mcorr]=nirx_motion_cbsi(hbo,hbr);
+hbo_mcorr = nirx_motion_spline(hbo,hdr);
+hbr_mcorr = nirx_motion_spline(hbr,hdr);
 
 % short channel regression to correct for scalp influences
 [heads,ids,pos] = nirx_read_optpos(posfile);

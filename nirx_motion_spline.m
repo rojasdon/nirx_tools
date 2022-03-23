@@ -78,14 +78,14 @@ for chn = 1:nchan
     end
     T_artifacts = (abs(mstd)>thresh).*mstd;
     T_artifacts(T_artifacts > 0) = 1; % set non-zero indices to 1
-    T_artifacts = [0 diff(T_artifacts) 0]; % turns onsets into 1 and offsets into -1
-    T_artifacts(end) = []; % chop added index off - it was added to prevent last index problems on start without stop
+    T_artifacts_diff = [0 diff(T_artifacts) 0]; % turns onsets into 1 and offsets into -1
+    T_artifacts_diff(end) = []; % chop added index off - it was added to prevent last index problems on start without stop
     
     % find the start and stop indices of the artifact segments
-    artifact_starts = find(T_artifacts == 1);
-    artifact_stops = find(T_artifacts == -1);
+    artifact_starts = find(T_artifacts_diff == 1);
+    artifact_stops = find(T_artifacts_diff == -1);
     if artifact_starts(end) > artifact_stops(end)
-        artifact_stops = [artifact_stops length(T_artifacts)]; % start without stop -> add stop at end of data
+        artifact_stops = [artifact_stops length(T_artifacts_diff)]; % start without stop -> add stop at end of data
     end
 
     n_segments = length(artifact_starts);
@@ -105,26 +105,68 @@ for chn = 1:nchan
          % subtract model from artifact segments
         corrected_segments{seg} = (segments{seg} - splineSeg{seg});
     end
-
-    % need to implement 2.2.6 Table 1 scaling from Scholkmann here to avoid level 
+    
+    
+    % apply correction to waveform segments, scaling as appropriate
+    % 2.2.6 Table 1 scaling from Scholkmann here to avoid level 
     % problems caused by subtraction of the spline model from the artifact segments - 
     % i.e., 9 cases considered, calculating alpha and beta based
-    % on time and sampling rates. Note that lambda in the table is the
-    % length of segment
-
-    % apply correction to waveform segments, scaling as appropriate
+    % on time and sampling rates. Note that lambda2 in the table is the
+    % length of the previous segment, lambda1 is length of current segment,
+    % see Table 1 for other nomenclature
     for seg=1:n_segments
-        curr_seg_mean = mean(corrected_segments{seg});
-        % if first sample is an artifact
-        % if last sample is an artifact
-        % if sample is surrounded by good data
-        if seg == 1
-            prev_seg_mean = mean(chandat(artifact_starts(seg)-maxWin:artifact_starts - 1));
+        fprintf('Artifact %d\n',seg);
+        if seg == 1 && artifact_starts(1) >= minWin
+            if artifact_starts > maxWin
+                a = mean(chandat(artifact_starts(seg)-maxWin-1:artifact_starts(seg)-1));
+                b = mean(segments{seg});
+            else
+                a = mean(chandat(artifact_starts(seg)-minWin-1:artifact_starts(seg)-1));
+                b = mean(segments{seg});
+            end
+        elseif seg == 1 && artifact_starts(1) < minWin
+            a = mean(chandat(artifact_stops(seg)+1:artifact_stops(seg)+minWin));
+            b = mean(segments{seg});
         else
-            prev_seg_mean = mean(chandat(artifact_stops(seg - 1) + 1:artifact_starts(seg) - 1));
+            lambda1 = length((artifact_starts(seg) - artifact_stops(seg - 1)));
+            lambda2 = length(segments{seg});
+            theta1 = ceil(lambda1/10); theta2 = ceil(lambda2/10);
+            if lambda2 <= minWin
+                if lambda1 <= minWin
+                    a = mean(chandat(artifact_stops(seg-1)+1:artifact_starts(seg)-1)); % entire prior non-artifact period
+                    b = mean(segments{seg});
+                elseif lambda1 > minWin && lambda1 < maxWin
+                    a = mean(chandat(artifact_stops(seg-1)+1-minWin:artifact_starts(seg)-1)); % minimum window in prior non-artifact period
+                    b = mean(segments{seg});
+                else 
+                    a = mean(chandat(artifact_stops(seg-1)+1-theta1:artifact_starts(seg)-1));
+                    b = mean(segments{seg});
+                end
+            elseif lambda2 > minWin && lambda2 < maxWin
+                if lambda1 <= minWin
+                    a = mean(chandat(artifact_stops(seg-1)+1-theta1:artifact_starts(seg)-1));
+                    b = mean(segments{seg}(1:minWin));
+                elseif lambda1 > minWin && lambda1 < maxWin
+                    a = mean(chandat(artifact_stops(seg-1)+1-minWin:artifact_starts(seg)-1)); % minimum window in prior non-artifact period
+                    b = mean(segments{seg}(1:minWin));
+                else 
+                    a = mean(chandat(artifact_stops(seg-1)+1-theta1:artifact_starts(seg)-1));
+                    b = mean(segments{seg}(1:minWin));
+                end
+            else
+                if lambda1 <= minWin
+                    a = mean(chandat(artifact_stops(seg-1)+1:artifact_starts(seg)-1)); % entire prior non-artifact period
+                    b = mean(segments{seg}(1:theta2));
+                elseif lambda1 > minWin && lambda1 < maxWin
+                    a = mean(chandat(artifact_stops(seg-1)+1-minWin:artifact_starts(seg)-1));
+                    b = mean(segments{seg}(1:theta2));
+                else
+                    a = mean(chandat(artifact_stops(seg-1)+1-theta1:artifact_starts(seg)-1));
+                    b = mean(segments{seg}(1:theta2));
+                end
+            end
         end
         cdata(chn,artifact_starts(seg):artifact_stops(seg)) = ...
-            corrected_segments{seg} - curr_seg_mean + prev_seg_mean;
+            corrected_segments{seg} + a - b;
     end
-
 end
