@@ -2,14 +2,17 @@
 % applying the following preprocessing steps:
 
 % 1. OD to hemoglobin conversion (modified beer lambert law)
-% 2. Short channel regression using nearest short channel to each long channel
-% 3. Production of quality assurance figures
+% 2. Filtering
+% 3. Determination of bad channels using various metrics
+% 4. Short channel regression using nearest short channel to each long channel
+% 5. Motion correction
+% 6. Production of quality assurance figures
 
 % if applying to your own data, make sure assumptions are correct on file
 % naming and constants in basic preamble
 clear;
 
-%% PREAMBLE
+%% Preamble
 
 % basic constants/definitions
 qa_suffix = 'qa.jpg'; % suffix for quality assurance figures
@@ -34,9 +37,6 @@ hdr = nirx_read_hdr([filebase '.hdr']);
 [raw, cols, S,D] = nirx_read_wl(filebase,hdr);
 nchans = size(raw,3);
 npoints = size(raw,2);
-
-% read events
-% [onsets, vals] = nirx_read_evt([filebase '_corrected.evt']);
 
 % read channel configuration
 chpairs = nirx_read_chconfig(chconfig);
@@ -64,12 +64,12 @@ end
 [q, bad] = nirx_signal_quality(hdr,raw);
 bad_shorts = find(ismember(hdr.shortSDindices,bad));
 
-% motion correction using CBSI method - need to do this prior to short
+% motion correction using CBSI or other method - need to do this prior to short
 % regression to avoid introducing motion from short channels into long
 % channels
-% [hbo_mcorr,hbr_mcorr,hbt_mcorr]=nirx_motion_cbsi(hbo,hbr);
 hbof=nirx_filter(hbo,hdr,'high',.005,'order',4);
 hbrf=nirx_filter(hbr,hdr,'high',.005,'order',4);
+%[hbo_mcorr,hbr_mcorr,hbt_mcorr]=nirx_motion_cbsi(hbof,hbrf);
 %hbo_mcorr = nirx_motion_spline(hbof,hdr);
 %hbr_mcorr = nirx_motion_spline(hbrf,hdr);
 hbo_mcorr = TDDR(hbof',hdr.sr);
@@ -98,9 +98,10 @@ for chn = 1:nld
     hbt_c(chn,:) = hbo_c(chn,:) + hbr_c(chn,:);
 end
 
-% low pass filter
-hbo_f = nirx_filter(hbo_c,hdr,'low',.15,'order',4);
-hbr_f = nirx_filter(hbr_c,hdr,'low',.15,'order',4);
+% low pass filter - make sure the cutoff is higher than your block/task
+% repetition rate or you will be filtering out your wanted brain signals!
+hbo_f = nirx_filter(hbo_c,hdr,'low',.2,'order',4);
+hbr_f = nirx_filter(hbr_c,hdr,'low',.2,'order',4);
 
 % remove dc offsets, in case of uncorrected hb just for plotting purposes
 hbo_o = nirx_offset(hbo);
@@ -113,6 +114,8 @@ scalp_hbo_o = nirx_offset(scalp_hbo);
 scalp_hbr_o = nirx_offset(scalp_hbr);
 hbo_f_o = nirx_offset(hbo_c);
 hbr_f_o = nirx_offset(hbr_c);
+
+%% Plotting
 
 % plot to compare pre/post short channel regression on first long
 % channel, along with estimated scalp signal
@@ -192,7 +195,7 @@ colorbar('Ticks',[0,1,2,3,4],...
          'TickLabels',{'Lost','Critical','Acceptable','Excellent'})
 print(h, '-djpeg', [filebase '_qamap' qa_suffix]);
 
-%% should add in figure comparing pre and post processing on all short channels %%
+%% Save data
 
 % save interim processed data
 hbt_mcorr_o = hbo_mcorr_o + hbr_mcorr_o;

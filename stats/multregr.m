@@ -45,8 +45,7 @@ end
 
 % check first column for constant, issue warning
 n = size(X,1); % n rows
-c = ones(n,1);
-if any((c == X(:,1)) ~= 1)
+if any(X(:,1) ~= 1)
     warning('X may not have constant column. Results may be unexpected without y intercept!');
 end
 

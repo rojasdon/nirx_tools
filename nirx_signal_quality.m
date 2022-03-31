@@ -21,6 +21,7 @@ function [q,bad] = nirx_signal_quality(hdr,data)
 % 03/04/2022 - added text output to show bad channels, if any
 % 03/13/2022 - added optional bad channel output for convenient list of bad
 %              channels
+% 03/31/2022 - added q channel info for convenience
 
 % calculate level and noise measures
 q.level = squeeze(mean(data,2));
@@ -74,6 +75,7 @@ for wl = 1:length(hdr.wl)
         q.quality(wl,chn) = min(quality{wl,chn});
     end
 end
+
 % find/report questionable channels
 [wl_ind,bad] = ind2sub(size(q.quality),find(q.quality <= 1));
 bad = unique(bad); % it only takes one bad wavelength
@@ -85,3 +87,7 @@ if ~isempty(bad)
 else
     fprintf('All channels pass quality metrics.\n');
 end
+q.shortchans = hdr.shortSDindices;
+q.longchans = hdr.longSDindices;
+q.SDpairs = hdr.SDpairs;
+q.bad = bad; % called bad by NIRx standards
