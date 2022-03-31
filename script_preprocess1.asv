@@ -71,7 +71,7 @@ bad_shorts = find(ismember(hdr.shortSDindices,bad));
 hbof=nirx_filter(hbo,hdr,'high',.01,'order',4);
 hbrf=nirx_filter(hbr,hdr,'high',.01,'order',4);
 hbo_mcorr = nirx_motion_spline(hbof,hdr);
-hbr_mcorr = nirx_motion_spline(hbrf,hdr);
+hbr_mcorr = nirx_motion_spline(hbr,hdr);
 
 % short channel regression to correct for scalp influences
 [heads,ids,pos] = nirx_read_optpos(posfile);

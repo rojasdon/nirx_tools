@@ -17,6 +17,8 @@
 %       default = 3s
 % OUTPUT:
 %   cdata, N channel x N timepoint nirs timeseries, motion corrected
+% NOTES/TODO: if first sample is an artifact, probably cannot determine
+%   because of moving stdev. Maybe run it backwards on first N samples?
 function cdata = nirx_motion_spline(data,hdr,varargin)
 
 % defaults
@@ -27,6 +29,10 @@ if mod(win,2) == 1
     win = win + 1; % ensures an odd number
 end
 Tset = 0;
+min_art_len = ceil(hdr.sr); % minimum artifact length
+if min_art_len < 2
+    min_art_len = 2;
+end
 
 % this is alpha and beta in Table 1, aka min (alpha) and max (beta) window lengths
 minWin = ceil(1/3 * hdr.sr); % min and max segment lengths, in samples
@@ -78,34 +84,131 @@ for chn = 1:nchan
     end
     T_artifacts = (abs(mstd)>thresh).*mstd;
     T_artifacts(T_artifacts > 0) = 1; % set non-zero indices to 1
-    T_artifacts_diff = [0 diff(T_artifacts) 0]; % turns onsets into 1 and offsets into -1
-    T_artifacts_diff(end) = []; % chop added index off - it was added to prevent last index problems on start without stop
-    
-    % find the start and stop indices of the artifact segments
-    artifact_starts = find(T_artifacts_diff == 1);
-    artifact_stops = find(T_artifacts_diff == -1);
-    if artifact_starts(end) > artifact_stops(end)
-        artifact_stops = [artifact_stops length(T_artifacts_diff)]; % start without stop -> add stop at end of data
+
+    % deal with artifact lengths that are too short
+    ind = repmat(T_artifacts',1,3)+repmat(-1:1,length(T_artifacts),1);
+    %if ~isempty(ind)
+    %    ind = unique(ind);
+    %    not_in_timeline = ind < 1 | ind > length(T_artifacts);
+    %    ind(not_in_timeline) = [];
+    %    T_artifacts(ind) = 1;
+    %end
+    ind = strfind(T_artifacts,[1 0 1]);
+    for ii = 1:length(ind)
+        T_artifacts(ind:ind+2) = [1 1 1];
+    end
+    ind = strfind(T_artifacts,[0 1 0]);
+    for ii = 1:length(ind)
+        T_artifacts(ind:ind+2) = [0 0 0];
     end
 
-    n_segments = length(artifact_starts);
+    % artifact indices and run lengths
+    art_indices = find(diff(T_artifacts)) + 1;
+    if mod(art_indices,2) % is odd
+        art_indices = [art_indices length(T_artifacts)];
+    end
+    run_lengths = diff([1 art_indices]);
+    ind = find(run_lengths < 2);
+    if ~isempty(ind)
+        bad_ind = [];
+        for ii = 1:length(ind)
+            bad_ind = [bad_ind ind(ii) - 1:ind(ii)];
+        end
+        art_indices(bad_ind) = [];
+        run_lengths = diff([1 art_indices]);
+    end
+    
+    % starts and stops
+    artifact_starts = art_indices(1:2:end);
+    artifact_stops = art_indices(2:2:end)-1;
+    if artifact_starts(1) < 1
+        artifact_starts(1) = 1;
+    end
+    if artifact_starts(end) > artifact_stops(end)
+        artifact_stops = [artifact_stops length(T_artifacts)]; % start without stop -> add stop at end of data
+    end
+    if artifact_stops(end) > length(chandat)
+        artifact_stops(end) = length(chandat);
+    end
+    if length(artifact_starts) > length(artifact_stops)
+        artifact_starts(end) = [];
+    elseif length(artifact_stops) > length(artifact_starts)
+        artifact_stops(end) = [];
+    end
+    if artifact_stops(end) == artifact_starts(end)
+        artifact_starts(end) = [];
+        artifact_stops(end) = [];
+    end
+
+    % non-artifact-segments
+    no_artifact_starts = artifact_stops + 1;
+    no_artifact_stops = artifact_starts - 1;
+    if artifact_starts(1) > 1
+        no_artifact_starts = [1 no_artifact_starts]; % beginning is not an artifact
+        first_segment_is_artifact = false;
+    elseif artifact_starts(1) < 1
+        artifact_starts(1) = 1;
+        first_segment_is_artifact = true;
+    else
+        first_segment_is_artifact = true;
+    end
+    if no_artifact_stops(end) < length(chandat)
+        no_artifact_stops = [no_artifact_stops length(chandat)]; % end is not an artifact
+    elseif no_artifact_stops(end) > length(chandat)
+        no_artifact_stops(end) = length(chandat);
+    end
+
+    n_art_segments = length(artifact_starts);
+    n_noart_segments = length(no_artifact_starts);
     
     % segment the motion artifacts into discrete segments
-    segments = cell(n_segments,1);
-    for seg=1:n_segments
-        segments{seg} = chandat(artifact_starts(seg):artifact_stops(seg));
+    art_segments = cell(n_art_segments,1);
+    for seg=1:n_art_segments
+        art_segments{seg} = chandat(artifact_starts(seg):artifact_stops(seg));
+    end
+
+    % segment non motion artifact pieces into discrete segments
+    noart_segments = cell(n_noart_segments,1);
+    for seg=1:n_noart_segments
+        noart_segments{seg} = chandat(no_artifact_starts(seg):no_artifact_stops(seg));
     end
     
     % model with spline interpolation
-    corrected_segments = cell(n_segments,1);
-    spline_seg = cell(n_segments,1);
-    for seg=1:n_segments
+    corrected_segments = cell(n_art_segments,1);
+    spline_seg = cell(n_art_segments,1);
+    for seg=1:n_art_segments
+        fprintf('Segment %d spline\n',seg);
         % spline model
-        splineSeg{seg} = csaps(1:length(segments{seg}),segments{seg},p,1:length(segments{seg}));
+        splineSeg{seg} = csaps(1:length(art_segments{seg}),art_segments{seg},p,1:length(art_segments{seg}));
          % subtract model from artifact segments
-        corrected_segments{seg} = (segments{seg} - splineSeg{seg});
+        corrected_segments{seg} = (art_segments{seg} - splineSeg{seg});
     end
-    
+
+    % stitch the non artifact and artifact segments together in same cell
+    % to make next part easier
+    all_segments = [];
+    is_artifact = [];
+    nseg = min([length(art_segments) length(noart_segments)]);
+    if ~first_segment_is_artifact    
+        for ii=1:nseg
+            all_segments = [all_segments;noart_segments(ii);corrected_segments(ii)];
+            is_artifact = [is_artifact;0;1];
+        end
+    else
+        for ii=1:nseg
+            all_segments = [all_segments;art_segments(ii);corrected_segments(ii)];
+            is_artifact = [is_artifact;1;0];
+        end
+    end
+
+    % add last segment if different numbers for each type
+    if length(noart_segments) > length(art_segments)
+        all_segments = [all_segments; noart_segments(length(noart_segments))];
+        is_artifact = [is_artifact;0];
+    elseif length(noart_segments) < length(art_segments)
+        all_segments = [all_segments; corrected_segments(length(art_segments))];
+        is_artifact = [is_artifact;1];
+    end
     
     % apply correction to waveform segments, scaling as appropriate
     % 2.2.6 Table 1 scaling from Scholkmann here to avoid level 
@@ -114,59 +217,47 @@ for chn = 1:nchan
     % on time and sampling rates. Note that lambda2 in the table is the
     % length of the previous segment, lambda1 is length of current segment,
     % see Table 1 for other nomenclature
-    for seg=1:n_segments
-        fprintf('Artifact %d\n',seg);
-        if seg == 1 && artifact_starts(1) >= minWin
-            if artifact_starts > maxWin
-                a = mean(chandat(artifact_starts(seg)-maxWin-1:artifact_starts(seg)-1));
-                b = mean(segments{seg});
-            else
-                a = mean(chandat(artifact_starts(seg)-minWin-1:artifact_starts(seg)-1));
-                b = mean(segments{seg});
-            end
-        elseif seg == 1 && artifact_starts(1) < minWin
-            a = mean(chandat(artifact_stops(seg)+1:artifact_stops(seg)+minWin));
-            b = mean(segments{seg});
+    n_segments = length(all_segments);
+    level_corrected = [all_segments{1}];
+    for seg=2:n_segments
+        fprintf('Segment: %d\n',seg);
+        lambda1 = length(all_segments{seg - 1});
+        lambda2 = length(all_segments{seg});
+
+        % length of segments to take means
+        if lambda1 < minWin
+                lastseglen = length(all_segments{seg - 1});
+        elseif lambda1 < maxWin
+            lastseglen = minWin;
         else
-            lambda1 = length((artifact_starts(seg) - artifact_stops(seg - 1)));
-            lambda2 = length(segments{seg});
-            theta1 = ceil(lambda1/10); theta2 = ceil(lambda2/10);
-            if lambda2 <= minWin
-                if lambda1 <= minWin
-                    a = mean(chandat(artifact_stops(seg-1)+1:artifact_starts(seg)-1)); % entire prior non-artifact period
-                    b = mean(segments{seg});
-                elseif lambda1 > minWin && lambda1 < maxWin
-                    a = mean(chandat(artifact_stops(seg-1)+1-minWin:artifact_starts(seg)-1)); % minimum window in prior non-artifact period
-                    b = mean(segments{seg});
-                else 
-                    a = mean(chandat(artifact_stops(seg-1)+1-theta1:artifact_starts(seg)-1));
-                    b = mean(segments{seg});
-                end
-            elseif lambda2 > minWin && lambda2 < maxWin
-                if lambda1 <= minWin
-                    a = mean(chandat(artifact_stops(seg-1)+1-theta1:artifact_starts(seg)-1));
-                    b = mean(segments{seg}(1:minWin));
-                elseif lambda1 > minWin && lambda1 < maxWin
-                    a = mean(chandat(artifact_stops(seg-1)+1-minWin:artifact_starts(seg)-1)); % minimum window in prior non-artifact period
-                    b = mean(segments{seg}(1:minWin));
-                else 
-                    a = mean(chandat(artifact_stops(seg-1)+1-theta1:artifact_starts(seg)-1));
-                    b = mean(segments{seg}(1:minWin));
-                end
-            else
-                if lambda1 <= minWin
-                    a = mean(chandat(artifact_stops(seg-1)+1:artifact_starts(seg)-1)); % entire prior non-artifact period
-                    b = mean(segments{seg}(1:theta2));
-                elseif lambda1 > minWin && lambda1 < maxWin
-                    a = mean(chandat(artifact_stops(seg-1)+1-minWin:artifact_starts(seg)-1));
-                    b = mean(segments{seg}(1:theta2));
-                else
-                    a = mean(chandat(artifact_stops(seg-1)+1-theta1:artifact_starts(seg)-1));
-                    b = mean(segments{seg}(1:theta2));
-                end
-            end
+            lastseglen = ceil(length(all_segments{seg - 1})/10); % theta 1 in table
         end
-        cdata(chn,artifact_starts(seg):artifact_stops(seg)) = ...
-            corrected_segments{seg} + a - b;
+        if lambda2 < minWin
+            currsegwin = length(all_segments{seg});
+        elseif lambda2 < maxWin
+            currsegwin = minWin;
+        else
+            currsegwin = ceil(length(all_segments{seg})/10); % theta 2 in table
+        end
+        
+        % mean of current and prior windows for level adjustment
+        if lambda1 == 1
+            mean_last_seg = mean(all_segments{seg - 1});
+        elseif lambda1 == 2 && lastseglen >= 2
+            mean_last_seg = mean(all_segments{seg - 1});
+        else
+            mean_last_seg = mean(all_segments{seg - 1}((end - lastseglen):(end)));
+        end
+        if lambda2 == 1
+            mean_curr_seg = mean(all_segments{seg});
+        else
+            mean_curr_seg = mean(all_segments{seg}(1:currsegwin));
+        end
+        all_segments{seg} = all_segments{seg} - mean_curr_seg + mean_last_seg;
     end
+    level_corrected = [];
+    for seg = 1:n_segments
+        level_corrected = [level_corrected all_segments{seg}];
+    end
+    cdata(chn,:) = level_corrected;
 end
