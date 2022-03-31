@@ -68,10 +68,14 @@ bad_shorts = find(ismember(hdr.shortSDindices,bad));
 % regression to avoid introducing motion from short channels into long
 % channels
 % [hbo_mcorr,hbr_mcorr,hbt_mcorr]=nirx_motion_cbsi(hbo,hbr);
-hbof=nirx_filter(hbo,hdr,'high',.01,'order',4);
-hbrf=nirx_filter(hbr,hdr,'high',.01,'order',4);
-hbo_mcorr = nirx_motion_spline(hbof,hdr);
-hbr_mcorr = nirx_motion_spline(hbrf,hdr);
+hbof=nirx_filter(hbo,hdr,'high',.005,'order',4);
+hbrf=nirx_filter(hbr,hdr,'high',.005,'order',4);
+%hbo_mcorr = nirx_motion_spline(hbof,hdr);
+%hbr_mcorr = nirx_motion_spline(hbrf,hdr);
+hbo_mcorr = TDDR(hbof',hdr.sr);
+hbr_mcorr = TDDR(hbrf',hdr.sr);
+hbo_mcorr = hbo_mcorr';
+hbr_mcorr = hbr_mcorr';
 
 % short channel regression to correct for scalp influences
 [heads,ids,pos] = nirx_read_optpos(posfile);
@@ -95,8 +99,8 @@ for chn = 1:nld
 end
 
 % low pass filter
-hbo_f = nirx_filter(hbo_c,hdr,'low',.5,'order',4);
-hbr_f = nirx_filter(hbr_c,hdr,'low',.5,'order',4);
+hbo_f = nirx_filter(hbo_c,hdr,'low',.15,'order',4);
+hbr_f = nirx_filter(hbr_c,hdr,'low',.15,'order',4);
 
 % remove dc offsets, in case of uncorrected hb just for plotting purposes
 hbo_o = nirx_offset(hbo);
