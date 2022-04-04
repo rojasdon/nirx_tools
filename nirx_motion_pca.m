@@ -1,5 +1,7 @@
-% inspired by motion correction pca in homer. not a completed function!
-% Just a beginning of an idea.
+% Purpose: To correct motion related noise in fnirs data by PCA
+% Author: Don Rojas, Ph.D.
+% Citation: 
+function cdata = nirx_motion_pca(data,hdr)
 
 hdr=nirx_read_hdr('029-2015-12-05_001.hdr');
 [raw, ~, ~,~]=nirx_read_wl('029-2015-12-05_001',hdr);

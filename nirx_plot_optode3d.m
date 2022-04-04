@@ -18,7 +18,8 @@ function nirx_plot_optode3d(XYZ,S,N,varargin)
 % 'offset', the amount of surface offset, in mm, for each optode: default =
 %       10
 % 'cbar', for colorbar. If supplied, a colorbar is
-%   created with this label in the next argument
+%   created with a label from the next argument
+% 'labels', to label each plotted point, size must be 1 x n cell where n = size of S input
 % EXAMPLE 1: nirx_plot_optode3d(XYZ,S,N); uses default settings
 % EXAMPLE 2: nirx_plot_optode3d(chpos,scalp.vertices,N, 'edgecolor',[1 1 0],'facecolor',[0 1 1],...
 %    'facealpha',.5); % changes defaults
@@ -36,6 +37,7 @@ ec = [0 1 0]; % edge color
 fc = [1 0 0]; % fill color
 offset = 10; % slight offset in mm so circle surface does not intersect surface S
 theta = linspace(0,2*pi).';
+th_s = length(theta); 
 facelight = 'none';
 plotlegend = 0;
 plotlabels = 0;
@@ -70,7 +72,7 @@ if ~isempty(varargin)
                     labels = varargin{i+1};
                     plotlabels = 1;
                 otherwise
-                    error('Invalid option!');
+                    error('Invalid option: %s!',varargin{i});
             end
         end
     end
@@ -80,15 +82,12 @@ end
 Npnts = size(XYZ,1);
 if numel(fc) == 3 % all one color
     fc = repmat(fc,Npnts,1);
-%else % set a colormap to supplied array
-%    min_t = min(fc(fc>0));
-%    max_t = max(fc);
-%    per_t = min_t/max_t;
-%    byte_t = ceil(per_t*255);
-%    t_trans = [byte_t byte_t+((255-byte_t)/2) 255];
-%    t_colors = [1 0 0; 1 .65 0; 1 1 1];
-%    cmap = interp1(t_trans/255,t_colors,linspace(0,1,255));         
+    cmap = colormap; % use default
+else % scale colormap to supplied array
+    cmap = parula(Npnts);       
 end
+
+% deal with input variability
 if size(ec,1) == 1
     ec = repmat(ec,Npnts,1);
 end
@@ -111,7 +110,10 @@ for ii=1:Npnts
     point(3) = point(3) + offset * -n(2);
     T = null(n).';
     V = bsxfun(@plus,r*(cos(theta)*T(1,:)+sin(theta)*T(2,:)),point);
-    h = fill3(V(:,1),V(:,2),V(:,3),fc(ii,:), 'FaceAlpha', fa(ii),'EdgeColor',ec(ii,:),'linewidth',1.5);
+    fa_tmp = repmat(fa(ii),th_s,1);
+    ec_tmp = repmat(ec(ii,:),th_s,1);
+    fc_tmp = repmat(fc(ii),th_s,1);
+    h = fill3(V(:,1),V(:,2),V(:,3),fc_tmp(ii,:), 'FaceAlpha', fa_tmp(ii),'EdgeColor',ec_tmp(ii,:),'linewidth',1.5);
     h.FaceLighting = facelight;
     if plotlabels
         loc = double(point);
@@ -119,7 +121,7 @@ for ii=1:Npnts
     end
 end
 
-colormap; 
+colormap(cmap); 
 if plotlegend
     h = colorbar('SouthOutside'); ylabel(h,cbarlabel);
 end

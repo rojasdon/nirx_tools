@@ -17,24 +17,19 @@ cortex = gifti(fullfile(spm_dir,'cortex_20484.surf.gii'));
 braincolor = [200 120 105]./255; % pinker looking brain
 
 % channel and optode locations
-[hline,lbl,pos] = nirx_read_chpos('optode_positions.csv');
+[hline,lbl,pos] = nirx_read_optpos('optode_positions.csv');
 chpairs = nirx_read_chconfig('ch_config.txt');
-chpos = nirx_compute_chanlocs(lbl,pos,chpairs,hdr.shortdetindex);
+[longpos,shortpos] = nirx_compute_chanlocs(lbl,pos,chpairs,hdr.shortdetindex);
 sind = [];
-ldind = [];
-sdind = [];
+sdind = hdr.shortSDindices;
+ldind = hdr.longSDindices;
 for ii=1:length(lbl)
     if lbl{ii}{1}(1)=='S'
         sind = [sind ii];
-    elseif lbl{ii}{1}(1)=='D'
-        if ~isempty(find(ismember(hdr.shortdetindex,...
-                str2double(lbl{ii}{1}(2:end)))))
-            sdind = [sdind ii];
-        else
-            ldind = [ldind ii];
-        end
     end
 end
+dind = setdiff([1:length(pos)],sind);
+
 % plot surfaces
 figure('color','white');
 s = patch('vertices',scalp.vertices,'faces',scalp.faces,'edgecolor','none',...
@@ -54,11 +49,15 @@ nirx_plot_optode3d(pos(sind,:),S,N,'offset',10,'edgecolor',[1 0 0],...
     'facealpha',.4,'facecolor',[1 0 0],'labels',lbl(sind));
 
 % plot long detectors as red - nirx convention
-nirx_plot_optode3d(pos(ldind,:),S,N,'offset',10,'edgecolor',[0 1 0],...
-    'facealpha',.4,'facecolor',[0 1 0],'labels',lbl(ldind));
+nirx_plot_optode3d(pos(dind,:),S,N,'offset',10,'edgecolor',[0 1 0],...
+    'facealpha',.4,'facecolor',[0 1 0],'labels',lbl(dind));
 
 % plot short detectors as black circles
-nirx_plot_optode3d(pos(sdind,:),S,N,'offset',offset,'edgecolor',[0 0 0],'facecolor',[1 0 0]);
+nirx_plot_optode3d(shortpos,S,N,'offset',offset,'edgecolor',[0 0 0],'facecolor',[1 0 0]);
 
 % plot channels formed
-% nirx_plot_optode3d(chpos,S,N,'offset',offset,'edgecolor',[0 0 0],'facecolor',[0 0 1]);
+for ii=1:length(longpos)
+    chanlabels{ii} = str2cell(num2str(ii),1);
+end
+nirx_plot_optode3d(longpos,S,N,'offset',12,'edgecolor',[0 0 0],'facecolor',[0 0 1]);
+

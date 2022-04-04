@@ -17,8 +17,8 @@
 
 function [lcc,stat,scalp] = nirx_short_regression(lc, sc)
 X = [ones(length(lc),1) sc']; % regressors, just constant and short channel here
-[stat.b,stat.r2,stat.SEb,stat.tvals,stat.pvals,stat.e] = multregr(X,lc');
-scalp = stat.b(2).*sc; % scalp signal b(1) is intercept
+stat = multregr(X,lc');
+scalp = stat.beta(2).*sc; % scalp signal b(1) is intercept
 lcc = lc - scalp; % corrected long signal
         
 

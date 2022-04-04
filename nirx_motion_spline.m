@@ -19,6 +19,7 @@
 %   cdata, N channel x N timepoint nirs timeseries, motion corrected
 % NOTES/TODO: if first sample is an artifact, probably cannot determine
 %   because of moving stdev. Maybe run it backwards on first N samples?
+%   need to add first/last segment processing
 function cdata = nirx_motion_spline(data,hdr,varargin)
 
 % defaults
