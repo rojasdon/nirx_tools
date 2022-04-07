@@ -5,26 +5,41 @@ clear;
 
 %% Preamble/default settings
 qa_suffix = 'stats.jpg'; % suffix for quality assurance figures
-q_fdr = .1;
+q_fdr = .05;
 screen = get(0,'screensize'); % for setting figure size and location
 screen_h = screen(4);
 screen_w = screen(3);
-block_dur = 18;
+% block_dur = 18; % for joystick task
+block_dur = 12; % for tapping experiment
 con_2_plot = 6; % regressor number for plotting
-conmat = [0 1 0 0 0 1 0 0 0    % all right movements against baseline
-          0 0 0 1 0 0 0 1 0    % all left movements against baseline
-          0 1 0 1 0 1 0 1 0    % all movements against baseline
-          0 -1 0 1 0 -1 0 1 0  % left > right
-          0 1 0 -1 0 1 0 -1 0  % right > left
-          0 1 -1 1 -1 1 -1 1 -1 % Ex > Im
-          0 -1 1 -1 1 -1 1 -1 1]; % Im > Ex
+beta_2_plot = 2; % beta to plot
+% some contrasts for joystick task (columns for intercept + 8 conditions).
+% Implicit baseline
+%conmat = [0 1 0 0 0 1 0 0 0    % all right movements against baseline
+%          0 0 0 1 0 0 0 1 0    % all left movements against baseline
+%          0 1 0 1 0 1 0 1 0    % all movements against baseline
+%          0 -1 0 1 0 -1 0 1 0  % left > right
+%          0 1 0 -1 0 1 0 -1 0  % right > left
+%          0 1 -1 1 -1 1 -1 1 -1 % Ex > Im
+%          0 -1 1 -1 1 -1 1 -1 1]; % Im > Ex
+% baseline_condition = 9; % for joystick
 
+% some contrasts for tapping task (columns for intercept + 3 conditions).
+% Implicit baseline
+conmat = [0 1 1 1 
+          0 1 0 0 
+          0 0 1 0
+          0 0 0 1
+          0 -1 1 0
+          0 .5 .5 -1
+          0 0 1 -1];
+baseline_condition = 4; % for tapping task
 
 % load header and data
-filebase = 'NIRS-2021-09-28_001';
+filebase = 'NIRS-2021-09-28_002';
 load([filebase '_hb_sd.mat']);
 hdr = nirx_read_hdr([filebase '.hdr']);
-dat = hbt_mcorr_o';
+dat = hbo_mcorr_o';
 npoints = size(dat,1);
 
 % channel and optode locations
@@ -39,12 +54,15 @@ nconditions = length(unique(vals));
 % construct design matrix
 X = [];
 X.basis = 'hrf';
+X.names = {'Constant','Left Finger','Right Finger','Right Foot','Rest'}; % for tapping task
+% X.names = {'Constant','ExR_Lat','ImR_Lat','ExL_Vert',...
+%     'ImL_Vert','ExR_Vert','ImR_Vert','ExL_Lat','ImL_Lat','Rest'};
 X.dur = repmat(block_dur,1,nconditions);
 X.dt = 1/hdr.sr;
 X.nsamp = npoints;
 X.values = vals;
 X.onsets = onsets;
-X.baseline = 9;
+X.baseline = baseline_condition;
 X.implicit = 'yes';
 X.serial = 'AR';
 X = nirx_design_matrix(X);
@@ -70,15 +88,18 @@ camlight left; camlight right;
 lighting gouraud;
 rotate3d on;
 
-% contrast plotting
+% plotting the main beta results
 %tvals = cat(2,stat.tvals);
 %pvals = cat(2,stat.pvals);
 %tvals = tvals(beta_to_plot,hdr.longSDindices);
 %pvals = pvals(beta_to_plot,hdr.longSDindices);
+
+% alternative, plotting the contrast results
 tmp = arrayfun(@(s) transpose(s.contrast.tvals(con_2_plot)),stat(hdr.longSDindices),'uni',false);
 tvals = cell2mat(tmp);
 tmp = arrayfun(@(s) transpose(s.contrast.pvals(con_2_plot)),stat(hdr.longSDindices),'uni',false);
 pvals = cell2mat(tmp);
+
 pID = FDR(pvals,q_fdr);
 % set face alphas based on pval mask
 fa = zeros(1,length(pvals));
