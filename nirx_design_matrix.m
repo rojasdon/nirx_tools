@@ -14,11 +14,19 @@
 %   X.implicit, 'yes'|'no', implicit baselines ('yes') do not model the
 %       rest, avoiding overfitting. To include an explicit baseline
 %       condition, this should be 'no'.
+%   X.R, optional additional regressors. Can be either 1 x X.nsamp column
+%       vector of single regressor, or n x X.nsamp array of regressor columns.
+%       This is intended to add confounds such as local or global short channel/scalp
+%       estimates, or motion, but could also be used for added variables of
+%       interest. If added, X.names should be combined length of all
+%       columns.
 % OUTPUTS:
 %   X.X, new added field X is design matrix
 % HISTORY:
 %   04/07/22 - added condition names for plotting
+%   04/15/22 - added optional regressor inputs, X.R
 % TODO: allow more than canonical hrf
+
 function X = nirx_design_matrix(X)
 
 % conditions and durations
@@ -61,6 +69,11 @@ switch X.implicit
     otherwise
         % do nothing (maybe something later)
 end
+
+% add additional regressors if present
+if isfield(X,'R')
+    vec = [vec X.R];
+end
 X.X = vec;
 
 % plot design matrix (for debug only)
@@ -72,5 +85,4 @@ if visuals
     xlabel('Conditions');
     xticks(1:length(X.names));
     xticklabels(X.names);
-
 end

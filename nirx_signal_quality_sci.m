@@ -35,7 +35,7 @@ od850 = squeeze(data(2,:,:))';
 od760f = nirx_filter(od760,hdr,'high',lo_cut);
 od850f = nirx_filter(od850,hdr,'high',lo_cut);
 
-% high pass at either desired 2.5 Hz or highest allowable by Niquist. If
+% low pass at either desired 2.5 Hz or what is allowable by Niquist. If
 % Niquist < 1.5 do not highpass data, just let anti-alias be enough
 nfft = hdr.sr/2;
 if nfft >= hi_cut

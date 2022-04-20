@@ -4,8 +4,7 @@
 %   X.X, design matrix
 %   X.serial, serial correlation correction method, if desired
 %       ('none'|'AR')
-%   dat, nsamples x nchannels nirs data (e.g., HbO). Send different
-%       hemoglobin estimates through separate analyses.
+%   dat, nsamples x 1 channel nirs data (e.g., HbO, HbR, etc.).
 % OPTIONAL, in option/value pairs:
 %   'contrast', conmat, where conmat is n contrast by n + 1 condition
 %               vector, where n + 1 = size(X,2)
@@ -22,6 +21,8 @@
 %   1366-1379.
 % TODO: allow matlab built in ar.m function if installed
 % HISTORY: 04/01/2022 - option for contrast input added
+%          04/15/2022 - rewrote to take only one channel to facilitate
+%                       short-channel use in GLM
 
 function [stat,X] = nirx_1stlevel(X,dat,varargin)
     % default
@@ -44,22 +45,16 @@ function [stat,X] = nirx_1stlevel(X,dat,varargin)
             end
         end
     end
-
-    nchan = size(dat,2);
     nsamp = size(dat,1);
     
     % remove mean from channels - no harm if already done
-    dat = dat - repmat(mean(dat),nsamp,1);
+    dat = dat - mean(dat);
     
     % channel-wise regression, first pass
     if ~is_contrast
-        for chan = 1:nchan
-            stat(chan) = multregr(X.X,dat(:,chan));
-        end
+        stat(chan) = multregr(X.X,dat(:,chan));
     else
-        for chan = 1:nchan
-            stat(chan) = multregr(X.X,dat(:,chan),'contrast',conmat);
-        end
+        stat(chan) = multregr(X.X,dat(:,chan),'contrast',conmat);
     end
     
     % correct for serial correlation, if specified, resulting in
@@ -68,37 +63,31 @@ function [stat,X] = nirx_1stlevel(X,dat,varargin)
         
         % ar fit (can use matlab if installed, but default is huppert nirs-toolbox code)
         maxorder = ceil(1/X.dt);
-        cf = zeros(nchan,maxorder);
-        for chan = 1:nchan
-            tmp = nirx_arfit(stat(chan).resid,maxorder); % wrapper to nirs-toolbox code
-            tmp(1) = [];
-            cf(chan,1:length(tmp)) = tmp;
-        end
+        cf = zeros(maxorder);
+        tmp = nirx_arfit(stat.resid,maxorder); % wrapper to nirs-toolbox code
+        tmp(1) = [];
+        cf(1:length(tmp)) = tmp;
         
         % construct filters, per channel
         for chan = 1:nchan
-           f{chan} = [1; -cf(chan,:)'];
+           f = [1; -cf'];
         end
         
         % filter design matrix
         for chan = 1:nchan
-           X.Xf{chan} = filter(f{chan},1,X.X);
+           X.Xf = filter(f,1,X.X);
         end
         
         % filter data matrix
         for chan = 1:nchan
-           fdat(:,chan) = filter(f{chan},1,dat(:,chan));
+           fdat = filter(f,1,dat);
         end
         
         % redo model with filters applied
         if ~is_contrast
-            for chan = 1:nchan
-                stat(chan) = multregr(X.Xf{chan},fdat(:,chan));
-            end
+            stat = multregr(X.Xf,fdat);
         else
-            for chan = 1:nchan
-                stat(chan) = multregr(X.Xf{chan},fdat(:,chan),'contrast',conmat);
-            end
+            stat = multregr(X.Xf,fdat,'contrast',conmat);
         end
     end
     
