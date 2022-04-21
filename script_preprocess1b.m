@@ -24,7 +24,7 @@ screen_h = screen(4);
 screen_w = screen(3);
          
 % Important for OD to HB conversion
-age = 30; % age in years, should alter to actual age in script
+age = 20; % age in years, should alter to actual age in script
 
 % required files
 posfile = 'optode_positions.csv';
@@ -74,18 +74,6 @@ bad_shorts = find(ismember(hdr.shortSDindices,bad));
 %hbo_mcorr = hbo_mcorr';
 %hbr_mcorr = hbr_mcorr';
 
-% short channel regressors - compute and save for later use in GLM
-[heads,ids,pos] = nirx_read_optpos(posfile);
-chns = nirx_read_chconfig(chconfig);
-[longpos,shortpos] = nirx_compute_chanlocs(ids,pos,chns,hdr.shortdetindex);
-nld = length(hdr.longSDindices);
-scnn = nirx_nearest_short(shortpos,longpos,hdr,bad_shorts);
-nearest_sd = zeros(nld,npoints,2);
-for chn = 1:nld
-    nearest_sd(chn,:,1) = hbo_mcorr(scnn(chn),:)';
-    nearest_sd(chn,:,2) = hbr_mcorr(scnn(chn),:)';
-end
-
 % low pass filter - make sure the cutoff is higher than your block/task
 % repetition rate or you will be filtering out your wanted brain signals!
 hbo_f = nirx_filter(hbo_mcorr,hdr,'low',.2,'order',4);
@@ -98,6 +86,23 @@ hbo_mcorr_o = nirx_offset(hbo_mcorr);
 hbr_mcorr_o = nirx_offset(hbr_mcorr);
 hbo_f_o = nirx_offset(hbo_f);
 hbr_f_o = nirx_offset(hbr_f);
+hbt_f_o = hbr_f_o + hbo_f_o;
+
+% short channel regressors - compute and save for later use in GLM
+[heads,ids,pos] = nirx_read_optpos(posfile);
+chns = nirx_read_chconfig(chconfig);
+[longpos,shortpos] = nirx_compute_chanlocs(ids,pos,chns,hdr.shortdetindex);
+nld = length(hdr.longSDindices);
+scnn = nirx_nearest_short(shortpos,longpos,hdr,bad_shorts);
+nearest_sd = zeros(nld,npoints,2);
+for chn = 1:nld
+    nearest_sd(chn,:,1) = hbo_f_o(scnn(chn),:)';
+    nearest_sd(chn,:,2) = hbr_f_o(scnn(chn),:)';
+end
+
+% extract all the short channels for GLM/PCA
+hbo_short = hbo_f_o(hdr.shortSDindices,:);
+hbr_short = hbr_f_o(hdr.shortSDindices,:);
 
 %% Plotting
 
@@ -155,4 +160,5 @@ print(h, '-djpeg', [filebase '_all_Motion+Filter' qa_suffix]);
 
 % save interim processed data
 hbt_mcorr_o = hbo_mcorr_o + hbr_mcorr_o;
-save([filebase '_hb_sd.mat'],'hbo_mcorr_o','hbr_mcorr_o','hbt_mcorr_o','bad','sci','nearest_sd');
+save([filebase '_hb_sd.mat'],'hbo_f_o','hbr_f_o','hbt_f_o','bad','sci',...
+    'nearest_sd','hbr_short','hbo_short');

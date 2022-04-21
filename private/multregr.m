@@ -26,12 +26,14 @@ function stat = multregr(X,y,varargin)
 %           3) stat.SEb = standard errors
 %           4) stat.tvals is t-statistic (beta / standard error of beta)
 %           5) stat.pvals is significance value, two-tailed
-%           6) stat.resid is residuals
-%           7) stat.contrast contains tvals and pvals for contrast input
+%           6) stat.yhat is predicted y
+%           7) stat.resid is residuals, y - yhat
+%           8) stat.contrast contains tvals and pvals for contrast input
 %           
 % History:  12/13/2018 - first working version
 %           04/02/2022 - added contrast input/output, changing output to a
 %                        structure instead of multiple outputs
+%           04/21/2022 - return yhat (predicted y)
 
 % defaults
 is_contrast = false;
@@ -96,6 +98,7 @@ stat.tvals = tvals;
 stat.pvals = pvals;
 stat.SEb = SEb;
 stat.Cov = C;
+stat.yhat = yhat;
 stat.resid = e;
 
 % contrasts, if any, and their associated stats. These are Wald statistics.

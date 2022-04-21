@@ -64,7 +64,7 @@ function [stat,X] = nirx_1stlevel(X,dat,varargin)
         
         % ar fit (can use matlab if installed, but default is huppert nirs-toolbox code)
         maxorder = ceil(1/X.dt);
-        cf = zeros(maxorder);
+        cf = zeros(maxorder,1);
         tmp = nirx_arfit(stat.resid,maxorder); % wrapper to nirs-toolbox code
         tmp(1) = [];
         cf(1:length(tmp)) = tmp;

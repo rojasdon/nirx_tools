@@ -11,8 +11,9 @@ screen_h = screen(4);
 screen_w = screen(3);
 % block_dur = 18; % for joystick task
 block_dur = 12; % for tapping experiment
-con_2_plot = 6; % regressor number for plotting
+con_2_plot = 5; % regressor number for plotting
 beta_2_plot = 2; % beta to plot
+condition_names = {'Constant','Left Finger','Right Finger','Right Foot','Rest'}; 
 % some contrasts for joystick task (columns for intercept + 8 conditions).
 % Implicit baseline
 %conmat = [0 1 0 0 0 1 0 0 0    % all right movements against baseline
@@ -25,21 +26,22 @@ beta_2_plot = 2; % beta to plot
 % baseline_condition = 9; % for joystick
 
 % some contrasts for tapping task (columns for intercept + 3 conditions).
-% Implicit baseline
-conmat = [0 1 1 1 
-          0 1 0 0 
-          0 0 1 0
-          0 0 0 1
-          0 -1 1 0
-          0 .5 .5 -1
-          0 0 1 -1];
+% Implicit baseline contrasts, need zero for any column of confound
+% regressor
+conmat = [0 0 .5 .5 0 0
+          0 1 0 0 0 0
+          0 0 1 0 0 0
+          0 0 0 1 0 0
+          0 -1 1 0 0 0
+          0 .5 .5 -1 0 0
+          0 0 1 -1 0 0];
 baseline_condition = 4; % for tapping task
 
 % load header and data
 filebase = 'NIRS-2021-09-28_002';
 load([filebase '_hb_sd.mat']);
 hdr = nirx_read_hdr([filebase '.hdr']);
-dat = hbo_mcorr_o';
+dat = hbo_f_o';
 npoints = size(dat,1);
 
 % channel and optode locations
@@ -54,7 +56,7 @@ nconditions = length(unique(vals));
 % construct design matrix
 X = [];
 Xorig.basis = 'hrf';
-Xorig.names = {'Constant','Left Finger','Right Finger','Right Foot','Rest'}; % for tapping task
+Xorig.names = condition_names; % for tapping task
 % X.names = {'Constant','ExR_Lat','ImR_Lat','ExL_Vert',...
 %     'ImL_Vert','ExR_Vert','ImR_Vert','ExL_Lat','ImL_Lat','Rest'};
 Xorig.dur = repmat(block_dur,1,nconditions);
@@ -64,14 +66,23 @@ Xorig.values = vals;
 Xorig.onsets = onsets;
 Xorig.baseline = baseline_condition;
 Xorig.implicit = 'yes';
-Xorig.serial = 'AR';
+Xorig.serial = 'None'; % 'AR'
+
+% PCA for global short channel
+hbo_short = hbo_short';
+pc = nirx_pca(hbo_short);
 
 % stats
 for chn = 1:size(longpos,1)
     X = Xorig;
-    X.R = squeeze(nearest_sd(chn,:,1)');
-    X = nirx_design_matrix(X);
-    [stat(chn), X] = nirx_1stlevel(X,dat(:,chn),'contrast',conmat);
+    X.R = [squeeze(nearest_sd(chn,:,1))' pc];
+    if chn == 1
+        X = nirx_design_matrix(X,true);
+    else
+        X = nirx_design_matrix(X,false);
+    end
+    X.X = spm_orth(X.X); % put this into design matrix function!
+    [stat(chn), X] = nirx_1stlevel(X,dat(:,hdr.longSDindices(chn)),'contrast',conmat);
 end
 
 % plotting basic brain setup
@@ -99,9 +110,9 @@ rotate3d on;
 %pvals = pvals(beta_to_plot,hdr.longSDindices);
 
 % alternative, plotting the contrast results
-tmp = arrayfun(@(s) transpose(s.contrast.tvals(con_2_plot)),stat(hdr.longSDindices),'uni',false);
+tmp = arrayfun(@(s) transpose(s.contrast.tvals(con_2_plot)),stat,'uni',false);
 tvals = cell2mat(tmp);
-tmp = arrayfun(@(s) transpose(s.contrast.pvals(con_2_plot)),stat(hdr.longSDindices),'uni',false);
+tmp = arrayfun(@(s) transpose(s.contrast.pvals(con_2_plot)),stat,'uni',false);
 pvals = cell2mat(tmp);
 
 pID = FDR(pvals,q_fdr);

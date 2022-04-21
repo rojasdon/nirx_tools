@@ -79,8 +79,9 @@ switch X.implicit
         % do nothing (maybe something later)
 end
 
-% add additional regressors if present
+% add additional regressors if present (not convolved with basis function)
 if isfield(X,'R')
+    X.R = detrend(X.R);
     vec = [vec X.R];
 end
 X.X = vec;
