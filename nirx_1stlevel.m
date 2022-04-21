@@ -1,7 +1,9 @@
 % PURPOSE: to apply glm, multiple linear regression to nirs data
 % INPUTS:
 %   X, design structure, see nirx_design_matrix.m, must have:
-%   X.X, design matrix
+%   X.X, design matrix, which includes columns of regressors of interest
+%   (e.g., conditions in an experiment), columns of regressors of confounds
+%   (e.g., a column of short channel data), etc.
 %   X.serial, serial correlation correction method, if desired
 %       ('none'|'AR')
 %   dat, nsamples x 1 channel nirs data (e.g., HbO, HbR, etc.).
@@ -45,16 +47,15 @@ function [stat,X] = nirx_1stlevel(X,dat,varargin)
             end
         end
     end
-    nsamp = size(dat,1);
     
     % remove mean from channels - no harm if already done
     dat = dat - mean(dat);
     
     % channel-wise regression, first pass
     if ~is_contrast
-        stat(chan) = multregr(X.X,dat(:,chan));
+        stat = multregr(X.X,dat);
     else
-        stat(chan) = multregr(X.X,dat(:,chan),'contrast',conmat);
+        stat = multregr(X.X,dat,'contrast',conmat);
     end
     
     % correct for serial correlation, if specified, resulting in
@@ -68,20 +69,14 @@ function [stat,X] = nirx_1stlevel(X,dat,varargin)
         tmp(1) = [];
         cf(1:length(tmp)) = tmp;
         
-        % construct filters, per channel
-        for chan = 1:nchan
-           f = [1; -cf'];
-        end
+        % construct filter
+        f = [1; -cf];
         
         % filter design matrix
-        for chan = 1:nchan
-           X.Xf = filter(f,1,X.X);
-        end
+        X.Xf = filter(f,1,X.X);
         
         % filter data matrix
-        for chan = 1:nchan
-           fdat = filter(f,1,dat);
-        end
+        fdat = filter(f,1,dat);
         
         % redo model with filters applied
         if ~is_contrast

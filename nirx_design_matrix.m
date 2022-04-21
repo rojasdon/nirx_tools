@@ -25,9 +25,18 @@
 % HISTORY:
 %   04/07/22 - added condition names for plotting
 %   04/15/22 - added optional regressor inputs, X.R
-% TODO: allow more than canonical hrf
+%   04/20/22 - optional input to visualize matrix
+% TODO: 1. allow more than canonical hrf e.g., hrf + dispersion
+%       2. separate visualization into different function
 
-function X = nirx_design_matrix(X)
+function X = nirx_design_matrix(X,varargin)
+
+% optional input
+if nargin > 1
+    visuals = varargin{1};
+else
+    visuals = true;
+end
 
 % conditions and durations
 ucond = unique(X.values);
@@ -77,7 +86,6 @@ end
 X.X = vec;
 
 % plot design matrix (for debug only)
-visuals = true;
 if visuals
     figure('color','w');
     imagesc(vec); axis square;
