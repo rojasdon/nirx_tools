@@ -34,9 +34,12 @@ function stat = multregr(X,y,varargin)
 %           04/02/2022 - added contrast input/output, changing output to a
 %                        structure instead of multiple outputs
 %           04/21/2022 - return yhat (predicted y)
+%           04/25/2022 - added non-negative regression option via stats
+%                        toolbox, if installed
 
 % defaults
 is_contrast = false;
+non_neg = false; % non-negative regression option, must have stats toolbox installed
 
 % check input arguments
 if ~isempty(varargin)
@@ -49,6 +52,15 @@ if ~isempty(varargin)
                 case 'contrast'
                     conmat = varargin{i+1};
                     is_contrast = true;
+                case {'nonnegative','nn'}
+                    v = ver;
+                    if varargin{i+1}
+                        if any(strcmp('Statistics and Machine Learning Toolbox', {v.Name}))
+                            non_neg = true;
+                        else
+                            non_neg = false;
+                        end
+                    end
                 otherwise
                     error('Invalid option!');
             end
@@ -62,8 +74,12 @@ if any(X(:,1) ~= 1)
     warning('X may not have constant column. Results may be unexpected without y intercept!');
 end
 
-% betas
-b = inv(X'*X)*X'*y;
+% betas - non-negative or regular least squares
+if non_neg
+    b = lsqnonneg(X,y); % forces betas to be >= 0
+else
+    b = X\y; % same as inv(X'*X)*(X'*y), but left division is slightly faster and more accurate than inv()
+end
 
 % predicted scores and residuals
 yhat = X*b; % predicted scores

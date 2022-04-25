@@ -55,7 +55,7 @@ function [stat,X] = nirx_1stlevel(X,dat,varargin)
     if ~is_contrast
         stat = multregr(X.X,dat);
     else
-        stat = multregr(X.X,dat,'contrast',conmat);
+        stat = multregr(X.X,dat,'contrast',conmat,'nn','true');
     end
     
     % correct for serial correlation, if specified, resulting in

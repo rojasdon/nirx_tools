@@ -22,6 +22,10 @@ qamap = [1 1 1
 screen = get(0,'screensize'); % for setting figure size and location
 screen_h = screen(4);
 screen_w = screen(3);
+
+% filter bands
+MW_band = [.07 .14]; % Mayer wave band
+HR_band = [.01 .3]; % Hemodynamic response band
          
 % Important for OD to HB conversion
 age = 20; % age in years, should alter to actual age in script
