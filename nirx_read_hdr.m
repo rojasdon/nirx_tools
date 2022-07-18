@@ -63,8 +63,6 @@ for ii=1:length(C)
                 nirx.shortbundles = strrep(nohit{2},'"','');
             case 'ShortDetIndex'
                 nirx.shortdetindex = strrep(nohit{2},'"','');
-            case 'Mod'
-                nirx.mod = 'Human Subject';
             case 'Steps'
                 nirx.steps = str2num(nohit{2});
             case 'Wavelengths'

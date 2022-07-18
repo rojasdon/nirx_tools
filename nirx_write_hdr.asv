@@ -1,10 +1,8 @@
 function nirx_write_hdr(file,hdr)
 % PURPOSE: function to write nirx format header file
-% AUTHOR: D. Rojas
-% INPUTS: 1. file = name of file to write
+% Inputs: 1. file = name of file to write
 %         2. hdr = hdr structure, see nirx_read_hdr.m
-% OUTPUTS: none on command line, hdr file on disk
-% EXAMPLE:
+% Example:
 %   nirx_write_hdr('filename.hdr',hdr);
 
 % some older headers do not have certain fields and are encased in isfield
@@ -24,7 +22,7 @@ fprintf(fp,'\n[ImagingParameters]\n');
 fprintf(fp,['Sources=' num2str(hdr.sources) '\n']);
 fprintf(fp,['Detectors=' num2str(hdr.detectors) '\n']);
 if isfield(hdr,'ShortBundles'); fprintf(fp,['ShortBundles="' num2str(hdr.shortbundles) '"\n']); end
-if isfield(hdr,'ShortDetIndex'); fprintf(fp,['ShortDetIndex="' num2str(nirx.shortdetindex) '"\n']); end
+
 if isfield(hdr,'steps');fprintf(fp,['Steps=' num2str(hdr.steps) '\n']);end
 fprintf(fp,['Wavelengths="' num2str(hdr.wl) '"\n']);
 fprintf(fp,['TrigIns=' num2str(hdr.trigin) '\n']);
