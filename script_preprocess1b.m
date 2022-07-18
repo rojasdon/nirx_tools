@@ -35,7 +35,7 @@ posfile = 'optode_positions.csv';
 chconfig = 'ch_config.txt';
 
 % load nirx data
-filebase = 'NIRS-2021-09-28_002';
+filebase = 'NIRS-2021-09-28_001';
 hdr = nirx_read_hdr([filebase '.hdr']);
 [raw, cols, S,D] = nirx_read_wl(filebase,hdr);
 nchans = size(raw,3);
@@ -45,6 +45,8 @@ npoints = size(raw,2);
 chpairs = nirx_read_chconfig(chconfig);
 
 %% basic preprocessing
+% raw intensity to optical density
+od = nirx_OD(raw);
 % convert optical measurements to hemoglobin units
 ec1 = nirx_ecoeff(hdr.wl(1));
 ec2 = nirx_ecoeff(hdr.wl(2));
@@ -55,11 +57,11 @@ hbr = hbo;
 hbt = hbo;
 [sd_dist,~,~] = nirx_sd_dist(filebase,[0 70],'mask','no'); % we don't care about good/bad here
 for chn = 1:nchans
-    od = squeeze(raw(:,:,chn));
+    tmp = squeeze(od(:,:,chn));
     sd = chpairs(chn,2:3);
     cdist = sd_dist{sd(1)}(sd(2));
     % MBLL, giving channel distance in cm
-    [hbo(chn,:),hbr(chn,:),hbt(chn,:)] = nirx_mbll(od,dpf,ec,cdist/10); % Beer-Lambert Law
+    [hbo(chn,:),hbr(chn,:),hbt(chn,:)] = nirx_mbll(tmp,dpf,ec,cdist/10); % Beer-Lambert Law
 end
 
 % signal quality computation - here to exclude bad short channels, but
@@ -67,102 +69,101 @@ end
 [bad,sci] = nirx_signal_quality_sci(hdr,raw);
 bad_shorts = find(ismember(hdr.shortSDindices,bad));
 
-% motion correction using CBSI or other method - need to do this prior to short
-% regression to avoid introducing motion from short channels into long
-% channels
-[hbo_mcorr,hbr_mcorr,hbt_mcorr]=nirx_motion_cbsi(hbo,hbr);
-%hbo_mcorr = nirx_motion_spline(hbof,hdr);
-%hbr_mcorr = nirx_motion_spline(hbrf,hdr);
-%hbo_mcorr = TDDR(hbof',hdr.sr);
-%hbr_mcorr = TDDR(hbrf',hdr.sr);
-%hbo_mcorr = hbo_mcorr';
-%hbr_mcorr = hbr_mcorr';
+% motion correction using TDDR or other method
+hbo_mcorr = TDDR(hbo',hdr.sr);
+hbr_mcorr = TDDR(hbr',hdr.sr);
+hbo_mcorr = hbo_mcorr';
+hbr_mcorr = hbr_mcorr';
 
-% low pass filter - make sure the cutoff is higher than your block/task
-% repetition rate or you will be filtering out your wanted brain signals!
-hbo_f = nirx_filter(hbo_mcorr,hdr,'low',.2,'order',4);
-hbr_f = nirx_filter(hbr_mcorr,hdr,'low',.2,'order',4);
+% filter - make sure the high cutoff is higher than your block/task
+% repetition rate for your HR band or you will be filtering out your wanted 
+% brain signals!
+hbo_HR = nirx_filter(hbo_mcorr,hdr,'band',HR_band,'order',4);
+hbr_HR = nirx_filter(hbr_mcorr,hdr,'band',HR_band,'order',4);
+hbo_MW = nirx_filter(hbo_mcorr,hdr,'band',MW_band,'order',4);
+hbr_MW = nirx_filter(hbr_mcorr,hdr,'band',MW_band,'order',4);
 
 % remove dc offsets, in case of uncorrected hb just for plotting purposes
-hbo_o = nirx_offset(hbo);
-hbr_o = nirx_offset(hbr);
-hbo_mcorr_o = nirx_offset(hbo_mcorr);
-hbr_mcorr_o = nirx_offset(hbr_mcorr);
-hbo_f_o = nirx_offset(hbo_f);
-hbr_f_o = nirx_offset(hbr_f);
-hbt_f_o = hbr_f_o + hbo_f_o;
+hbo_HR = nirx_offset(hbo_HR);
+hbr_HR = nirx_offset(hbr_HR);
+hbo_MW = nirx_offset(hbo_MW);
+hbr_MW = nirx_offset(hbo_MW);
+hbo_mcorr = nirx_offset(hbo_mcorr);
+hbr_mcorr = nirx_offset(hbr_mcorr);
+hbt_HR = hbr_HR + hbo_HR;
 
-% short channel regressors - compute and save for later use in GLM
+% nearest short channel regressors - compute and save for later use in GLM
 [heads,ids,pos] = nirx_read_optpos(posfile);
 chns = nirx_read_chconfig(chconfig);
 [longpos,shortpos] = nirx_compute_chanlocs(ids,pos,chns,hdr.shortdetindex);
 nld = length(hdr.longSDindices);
 scnn = nirx_nearest_short(shortpos,longpos,hdr,bad_shorts);
-nearest_sd = zeros(nld,npoints,2);
+nearest_hr_sd = zeros(nld,npoints,2);
+nearest_mw_sd = zeros(nld,npoints,2);
 for chn = 1:nld
-    nearest_sd(chn,:,1) = hbo_f_o(scnn(chn),:)';
-    nearest_sd(chn,:,2) = hbr_f_o(scnn(chn),:)';
+    nearest_hr_sd(chn,:,1) = hbo_HR(scnn(chn),:)';
+    nearest_hr_sd(chn,:,2) = hbr_HR(scnn(chn),:)';
+    nearest_mw_sd(chn,:,1) = hbo_MW(scnn(chn),:)';
+    nearest_mw_sd(chn,:,2) = hbr_MW(scnn(chn),:)';
 end
 
 % extract all the short channels for GLM/PCA
-hbo_short = hbo_f_o(hdr.shortSDindices,:);
-hbr_short = hbr_f_o(hdr.shortSDindices,:);
+hbo_HR_short = hbo_HR(hdr.shortSDindices,:);
+hbr_HR_short = hbr_HR(hdr.shortSDindices,:);
+hbo_MW_short = hbo_HR(hdr.shortSDindices,:);
+hbr_MW_short = hbr_HR(hdr.shortSDindices,:);
 
 %% Plotting
 
-% plot to compare no motion correction to motion correction to filtered
-% signals
+% plot to compare pre/post processing
 longchans = find(ismember(hdr.ch_type,'long'));
 h = figure('color','w');
 set(gcf,'Position',[ceil(screen_w/2) ceil(screen_h/2) 1024 512]);
 subplot(3,1,1);
-plot(hbo(longchans(1),:)'+.002); axis tight;
+plot(hbo(longchans(1),:)'); axis tight;
 hold on;
 plot(hbr(longchans(1),:)'); axis tight;
 xlabel('Samples'); ylabel('\Delta hemoglobin (\muM)');
 legend({'HbO','HbR'});
 title('MBLL Only - Channel 1');
 subplot(3,1,2);
-plot(hbo_mcorr_o(longchans(1),:)'+.002); axis tight;
+plot(hbo_mcorr(longchans(1),:)'); axis tight;
 hold on;
-plot(hbr_mcorr_o(longchans(1),:)'); axis tight;
+plot(hbr_mcorr(longchans(1),:)'); axis tight;
 legend({'HbO','HbR'});
 title('Motion Corrected - Channel 1');
 subplot(3,1,3);
-plot(hbo_f_o(longchans(1),:)'+.002); axis tight;
+plot(hbo_HR(longchans(1),:)'); axis tight;
 hold on;
-plot(hbr_f_o(longchans(1),:)'); axis tight;
+plot(hbr_HR(longchans(1),:)'); axis tight;
 legend({'HbO','HbR'});
 title('MBLL+Motion+Filter - Channel 1');
 print(h, '-djpeg', [filebase '_Preprocessing' qa_suffix]);
 
 % plot all channels with no corrections
-h = figure('color','w'); hold on; 
+h = figure('color','w'); hold on; title('All Channels HbO2 no corrections, only MBLL');
 set(gcf,'Position',[ceil(screen_w/2) ceil(screen_h/2) 1024 512]);
-scaling = 1e3; spacing = 2;
+spacing = 2;
 for chn=1:length(longchans)
-    plot(hbo_o(longchans(chn),:)' * scaling + (chn*spacing)); axis tight;
+    plot(hbo(longchans(chn),:)' + (chn*spacing)); axis tight;
 end
 yticklabels(string(5:5:50));
 xlabel('Samples'); ylabel({'\Delta hemoglobin (\muM)';'Channel'});
 print(h, '-djpeg', [filebase '_all_MBLL_only' qa_suffix]);
 
-% plot all channels, short channel + motion corrected + filtered
-h = figure('color','w'); hold on; 
+% plot all channels, motion corrected + filtered
+h = figure('color','w'); hold on; title('All Channels HbO2 Motion + Filtering');
 set(gcf,'Position',[ceil(screen_w/2) ceil(screen_h/2) 1024 512]);
-scaling = 1e3; spacing = 2;
+spacing = 2;
 for chn=1:length(longchans)
-    plot(hbo_f_o(chn,:)' * scaling + (chn*spacing)); axis tight;
+    plot(hbo_HR(chn,:)' + (chn*spacing)); axis tight;
 end
 yticklabels(string(5:5:50));
 xlabel('Samples'); ylabel({'\Delta hemoglobin (\muM)';'Channel'});
 print(h, '-djpeg', [filebase '_all_Motion+Filter' qa_suffix]);
 
-% do a better bad channel plot here
-
 %% Save data
 
 % save interim processed data
-hbt_mcorr_o = hbo_mcorr_o + hbr_mcorr_o;
-save([filebase '_hb_sd.mat'],'hbo_f_o','hbr_f_o','hbt_f_o','bad','sci',...
-    'nearest_sd','hbr_short','hbo_short');
+save([filebase '_hb_sd.mat'],'hbo_HR','hbr_HR','hbt_HR','hbo_MW','hbr_MW','bad','sci',...
+    'nearest_hr_sd','nearest_mw_sd','hbo_HR_short','hbr_HR_short','hbo_MW_short','hbr_MW_short');

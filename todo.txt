@@ -1,0 +1,9 @@
+1. Optical density conversion
+2. Test GLM with short channels - examine betas
+3. Clean up main scripts and add some comments in front
+4. Make help on functions consistent
+5. Move non-working/tested functions to new directory
+6. Add documentation on main functionality
+7. Add example dataset and functions to analyze it through first level
+8. Robust regression option
+9. AR-IRLS approach. Somewhat done. But, need to do all orders, filter regressions, then select best model order via BIC criterion. 

@@ -1,4 +1,5 @@
 % PURPOSE:  provides averages of conditions repeated in experiment
+% AUTHOR:   D. Rojas
 % INPUTS:   hdr, from nirx_read_hdr
 %           od, optical data nchan x npoints
 %           win, epoch window, in seconds (e.g., [-5 20])

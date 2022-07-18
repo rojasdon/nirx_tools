@@ -28,7 +28,7 @@
 %          07/13/2022 - changed name to nirx_glm.m, added robust regression
 %                       option and IRL part of AR-IRL
 
-function [stat,X] = nirx_1stlevel(X,dat,varargin)
+function [stat,X] = nirx_glm(X,dat,varargin)
     % default
     is_contrast = false;
 
@@ -62,9 +62,9 @@ function [stat,X] = nirx_1stlevel(X,dat,varargin)
     
     % correct for serial correlation, if specified, resulting in
     % Wy = WXβ + Wε 
-    if strcmpi(X.serial,'AR')
+    if strcmpi(X.serial,'AR-IRL')
         
-        % ar fit (can use matlab if installed, but default is huppert nirs-toolbox code)
+        % ar fit using matlab (econometrics toolbox must be installed)
         maxorder = ceil(1/X.dt);
         cf = zeros(maxorder,1);
         tmp = nirx_arfit(stat.resid,maxorder); % wrapper to nirs-toolbox code

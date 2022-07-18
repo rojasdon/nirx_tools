@@ -24,14 +24,18 @@ function stat = multregr(X,y,varargin)
 % Outputs:  1) stat.beta = estimates of beta and intercept
 %           2) stat.r2 is r-squared
 %           3) stat.SEb = standard errors
-%           4) stat.tvals is t-statistic (beta / standard error of beta)
-%           5) stat.pvals is significance value, two-tailed
-%           6) stat.resid is residuals
-%           7) stat.contrast contains tvals and pvals for contrast input
+%           4) stat.AIC = Akaike Information Criterion
+%           5) stat.BIC = Bayesian Information Criterion
+%           6) stat.tvals is t-statistic (beta / standard error of beta)
+%           7) stat.pvals is significance value, two-tailed
+%           8) stat.resid is residuals
+%           9) stat.contrast contains tvals and pvals for contrast input
 %           
 % History:  12/13/2018 - first working version
 %           04/02/2022 - added contrast input/output, changing output to a
 %                        structure instead of multiple outputs
+%           07/12/2022 - added Akaike and Bayesian Information Criteria
+%                        output to stat structure
 
 % defaults
 is_contrast = false;
@@ -56,6 +60,7 @@ end
 
 % check first column for constant, issue warning
 n = size(X,1); % n rows
+p = size(X,2); % p columns
 if any(X(:,1) ~= 1)
     warning('X may not have constant column. Results may be unexpected without y intercept!');
 end
@@ -95,6 +100,8 @@ stat.F = F;
 stat.tvals = tvals;
 stat.pvals = pvals;
 stat.SEb = SEb;
+stat.AIC = n * log(SSresid/n) + 2 * p; % Akaike, 1969
+stat.BIC = n * log(SSresid/n) + p * log(n); % Schwarz, 1978
 stat.Cov = C;
 stat.resid = e;
 
@@ -106,14 +113,15 @@ if is_contrast
     if any(sum(conmat,2) ~= 0)
         Warning('Contrast row weights do not sum to zero!');
     else
-    for ii = 1:size(conmat,1)
-        con_est = conmat(ii,:)*stat.beta;
-        contrast.tvals(ii) = ...
-            sqrt(con_est'*inv(conmat(ii,:)*stat.Cov*conmat(ii,:)')*con_est);
-        contrast.pvals(ii) = ...
-            betainc(df_resid/(df_resid+(contrast.tvals(ii)^2)),0.5*df_resid,0.5);
+        for ii = 1:size(conmat,1)
+            con_est = conmat(ii,:)*stat.beta;
+            contrast.tvals(ii) = ...
+                sqrt(con_est'*inv(conmat(ii,:)*stat.Cov*conmat(ii,:)')*con_est);
+            contrast.pvals(ii) = ...
+                betainc(df_resid/(df_resid+(contrast.tvals(ii)^2)),0.5*df_resid,0.5);
+        end
+        stat.contrast = contrast;
     end
-    stat.contrast = contrast;
 end
 
 end % end of function

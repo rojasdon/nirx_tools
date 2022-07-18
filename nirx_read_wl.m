@@ -1,4 +1,4 @@
-function [raw,cols,S,D] = hdr_read_wl(basename,hdr,varargin)
+function [raw,cols,S,D] = nirx_read_wl(basename,hdr,varargin)
 % function to read wl1 and wl2 files from nirx
 % Inputs:
 %   1. basename = file base name without extension

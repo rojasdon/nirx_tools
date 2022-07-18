@@ -28,6 +28,8 @@
 %   04/20/22 - optional input to visualize matrix
 % TODO: 1. allow more than canonical hrf e.g., hrf + dispersion
 %       2. separate visualization into different function
+%       3. return structure containing all timepoints associated with each
+%          condition as ones/zeros
 
 function X = nirx_design_matrix(X,varargin)
 
@@ -50,10 +52,12 @@ for ii=1:ncond
 end
 
 % task vectors and convolution with hrf
-xBF.dt = X.dt;
-xBF.name = X.basis; % 'hrf' for now
-xBF = spm_get_bf(xBF);
+% xBF.dt = X.dt;
+% xBF.name = X.basis; % 'hrf' for now
+% xBF = spm_get_bf(xBF);
+xBF = spm_hrf(X.dt);
 vec = zeros(ncond,X.nsamp);
+vechrf = vec;
 for cond = 1:ncond
     vec(cond,ons{cond}) = 1;
     for ii=1:durations{cond} - 1
@@ -62,18 +66,18 @@ for cond = 1:ncond
             vec(cond,spoint) = 1;
         end
     end
-    tmpvec = conv(vec(cond,:),xBF.bf,'full');
+    tmpvec = conv(vec(cond,:),xBF,'full');
     tmpvec(X.nsamp+1:end) = [];
-    vec(cond,:) = tmpvec;
+    vechrf(cond,:) = tmpvec;
 end
 
 % add column of ones for constant, to get intercept from model
-vec = [ones(1,X.nsamp); vec]';
+vechrf = [ones(1,X.nsamp); vechrf]';
 
 % implicit baseline, if requested
 switch X.implicit
     case 'yes'
-        vec(:,X.baseline + 1) = []; % account for constant column
+        vechrf(:,X.baseline + 1) = []; % account for constant column
         X.names(end) = [];
     otherwise
         % do nothing (maybe something later)
@@ -82,14 +86,15 @@ end
 % add additional regressors if present (not convolved with basis function)
 if isfield(X,'R')
     X.R = detrend(X.R);
-    vec = [vec X.R];
+    vechrf = [vechrf X.R];
 end
-X.X = vec;
+X.X = vechrf;
+X.Xstick = vec';
 
 % plot design matrix (for debug only)
 if visuals
     figure('color','w');
-    imagesc(vec); axis square;
+    imagesc(X.X); axis square;
     ylabel('Samples');
     xlabel('Conditions');
     xticks(1:length(X.names));

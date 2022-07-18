@@ -9,39 +9,40 @@ q_fdr = .05;
 screen = get(0,'screensize'); % for setting figure size and location
 screen_h = screen(4);
 screen_w = screen(3);
-% block_dur = 18; % for joystick task
-block_dur = 12; % for tapping experiment
-con_2_plot = 5; % regressor number for plotting
+block_dur = 18; % for joystick task
+% block_dur = 12; % for tapping experiment
+con_2_plot = 2; % contrast number for plotting
 beta_2_plot = 2; % beta to plot
 condition_names = {'Constant','Left Finger','Right Finger','Right Foot','Rest'}; 
-% some contrasts for joystick task (columns for intercept + 8 conditions).
+%condition_names = {'Constant','ExR_Lat','ImR_Lat','ExL_Vert',...
+%     'ImL_Vert','ExR_Vert','ImR_Vert','ExL_Lat','ImL_Lat','Rest'};
+% some contrasts for joystick task (columns for intercept + 8 conditions + regressor of no interest).
 % Implicit baseline
-%conmat = [0 1 0 0 0 1 0 0 0    % all right movements against baseline
-%          0 0 0 1 0 0 0 1 0    % all left movements against baseline
-%          0 1 0 1 0 1 0 1 0    % all movements against baseline
-%          0 -1 0 1 0 -1 0 1 0  % left > right
-%          0 1 0 -1 0 1 0 -1 0  % right > left
-%          0 1 -1 1 -1 1 -1 1 -1 % Ex > Im
-%          0 -1 1 -1 1 -1 1 -1 1]; % Im > Ex
-% baseline_condition = 9; % for joystick
+conmat = [0 1 0 0 0 1 0 0 0 0 0 0   % all right movements against baseline
+          0 0 0 1 0 0 0 1 0 0 0 0   % all left movements against baseline
+          0 1 0 1 0 1 0 1 0 0 0 0   % all movements against baseline
+          0 -1 0 1 0 -1 0 1 0 0 0 0  % left > right
+          0 1 0 -1 0 1 0 -1 0 0 0 0  % right > left
+          0 1 -1 1 -1 1 -1 1 -1 0 0 0  % Ex > Im
+          0 -1 1 -1 1 -1 1 -1 1 0 0 0]; % Im > Ex
 
 % some contrasts for tapping task (columns for intercept + 3 conditions).
 % Implicit baseline contrasts, need zero for any column of confound
 % regressor
-conmat = [0 0 .5 .5 0 0
-          0 1 0 0 0 0
-          0 0 1 0 0 0
-          0 0 0 1 0 0
-          0 -1 1 0 0 0
-          0 .5 .5 -1 0 0
-          0 0 1 -1 0 0];
-baseline_condition = 4; % for tapping task
+%conmat = [0 0 .5 .5 0
+%          0 1 0 0 0
+%          0 0 1 0 0
+%          0 0 0 1 0
+%          0 -1 1 0 0
+%          0 .5 .5 -1 0
+%          0 0 1 -1 0];
+baseline_condition = 9; % 4 for tapping task, 9 for joystick task
 
 % load header and data
-filebase = 'NIRS-2021-09-28_002';
+filebase = 'NIRS-2021-09-28_001';
 load([filebase '_hb_sd.mat']);
 hdr = nirx_read_hdr([filebase '.hdr']);
-dat = hbo_f_o';
+dat = hbo_HR';
 npoints = size(dat,1);
 
 % channel and optode locations
@@ -57,8 +58,6 @@ nconditions = length(unique(vals));
 X = [];
 Xorig.basis = 'hrf';
 Xorig.names = condition_names; % for tapping task
-% X.names = {'Constant','ExR_Lat','ImR_Lat','ExL_Vert',...
-%     'ImL_Vert','ExR_Vert','ImR_Vert','ExL_Lat','ImL_Lat','Rest'};
 Xorig.dur = repmat(block_dur,1,nconditions);
 Xorig.dt = 1/hdr.sr;
 Xorig.nsamp = npoints;
@@ -66,16 +65,23 @@ Xorig.values = vals;
 Xorig.onsets = onsets;
 Xorig.baseline = baseline_condition;
 Xorig.implicit = 'yes';
-Xorig.serial = 'None'; % 'AR'
+Xorig.serial = 'AR'; % 'AR'
 
-% PCA for global short channel
-hbo_short = hbo_short';
-pc = nirx_pca(hbo_short);
+% PCA for global short channel and global Mayer Wave
+hbo_HR_short = hbo_HR_short';
+hbo_MW_short = hbo_MW_short';
+pc_short = nirx_pca(hbo_HR_short);
+pc_MW = nirx_pca(hbo_MW_short);
 
 % stats
 for chn = 1:size(longpos,1)
     X = Xorig;
-    X.R = [squeeze(nearest_sd(chn,:,1))' pc];
+    % Find optimum lag first, lag the regressor, then enter.
+    % add nearest short, nearest Mayer wave filtered short, global short, and 
+    % global Mayer wave, to design matrix
+    % X.R = [squeeze(nearest_hr_sd(chn,:,1))' squeeze(nearest_mw_sd(chn,:,1))' ...
+    %    pc_short pc_MW];
+    X.R = [squeeze(nearest_hr_sd(chn,:,1))' pc_short squeeze(nearest_mw_sd(chn,:,1))']; % only short
     if chn == 1
         X = nirx_design_matrix(X,true);
     else
@@ -106,8 +112,8 @@ rotate3d on;
 % plotting the main beta results
 %tvals = cat(2,stat.tvals);
 %pvals = cat(2,stat.pvals);
-%tvals = tvals(beta_to_plot,hdr.longSDindices);
-%pvals = pvals(beta_to_plot,hdr.longSDindices);
+%tvals = tvals(beta_2_plot,:);
+%pvals = pvals(beta_2_plot,:);
 
 % alternative, plotting the contrast results
 tmp = arrayfun(@(s) transpose(s.contrast.tvals(con_2_plot)),stat,'uni',false);
