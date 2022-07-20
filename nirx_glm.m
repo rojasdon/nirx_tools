@@ -1,11 +1,15 @@
 % PURPOSE: to apply glm, multiple linear regression to nirs data
 % INPUTS:
-%   X, design structure, see nirx_design_matrix.m, must have:
-%   X.X, design matrix, which includes columns of regressors of interest
-%   (e.g., conditions in an experiment), columns of regressors of confounds
-%   (e.g., a column of short channel data), etc.
-%   X.serial, serial correlation correction method, if desired
-%       ('none'|'AR')
+%   X,          design structure, see nirx_design_matrix.m, must have:
+%   X.X,        design matrix, which includes columns of regressors of interest
+%               (e.g., conditions in an experiment), columns of regressors of confounds
+%               (e.g., a column of short channel data), etc.
+%   X.serial,   serial correlation correction method, if desired
+%               ('none'|'AR(1)'|...'). Options include:
+%               'none', no correction
+%               'AR(1)', AR with order specified (AR(2), AR(3), etc.)
+%               'AR', AR model with optimum order per channel estimate
+%               'AR-IRLS', AR iteratively reweighted least squares
 %   dat, nsamples x 1 channel nirs data (e.g., HbO, HbR, etc.).
 % OPTIONAL, in option/value pairs:
 %   'contrast', conmat, where conmat is n contrast by n + 1 condition
@@ -61,18 +65,23 @@ function [stat,X] = nirx_glm(X,dat,varargin)
     end
     
     % correct for serial correlation, if specified, resulting in
-    % Wy = WXβ + Wε 
-    if strcmpi(X.serial,'AR-IRL')
-        
-        % ar fit using matlab (econometrics toolbox must be installed)
+    % Wy = WXβ + Wε, where weights are applied using filter to both sides
+    % of equation
+    if contains(X.serial,'AR')
         maxorder = ceil(1/X.dt);
-        cf = zeros(maxorder,1);
-        tmp = nirx_arfit(stat.resid,maxorder); % wrapper to nirs-toolbox code
-        tmp(1) = [];
-        cf(1:length(tmp)) = tmp;
+        % determine type of AR model requested
+        if contains(X.serial,'AR(')
+            pindex = find(ismember(X.serial,')'));
+            order = str2num(X.serial(4:pindex-1));
+            coeff = ar_model(dat,order);
+        elseif contains(X.serial,'AR-IRLS')
+            order = []% determined via IRLS per channel
+        else
+            order = []% do optimum per channel, non-recursive
+        end  
         
-        % construct filter
-        f = [1; -cf];
+        % construct filter from coefficient weights
+        f = [coeff(1); -coeff(2:end)];
         
         % filter design matrix
         X.Xf = filter(f,1,X.X);
