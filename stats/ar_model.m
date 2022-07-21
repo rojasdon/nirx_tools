@@ -50,8 +50,7 @@ if ~isempty(varargin)
     end
 end
 
-% lag matrices
-npoints = length(y);
+% lag matrices and estimation
 for lag = 1:maxorder
     ylags = timelags(y,lag);
     yy = ylags(:,1);

@@ -22,15 +22,15 @@
 %       .pvals
 %       .e 
 %   X, structure containing Xf, AR filtered design matrix
-% CITATION: If using AR-IRL approach, Barker et al.(2013). Autoregressive model based algorithm for correcting motion 
+% CITATION: If using AR-IRLS approach, Barker et al.(2013). Autoregressive model based algorithm for correcting motion 
 %   and serially correlated errors in fNIRS, Biomedical Optics Express, 4,
 %   1366-1379.
 % TODO: allow matlab built in ar.m function if installed
 % HISTORY: 04/01/2022 - option for contrast input added
 %          04/15/2022 - rewrote to take only one channel to facilitate
 %                       short-channel use in GLM
-%          07/13/2022 - changed name to nirx_glm.m, added robust regression
-%                       option and IRL part of AR-IRL
+%          07/13/2022 - changed name to nirx_glm.m, added AR options
+%                       including AR-IRLS
 
 function [stat,X] = nirx_glm(X,dat,varargin)
     % default
@@ -73,29 +73,54 @@ function [stat,X] = nirx_glm(X,dat,varargin)
         if contains(X.serial,'AR(')
             pindex = find(ismember(X.serial,')'));
             order = str2num(X.serial(4:pindex-1));
-            coeff = ar_model(dat,order);
-        elseif contains(X.serial,'AR-IRLS')
-            order = []% determined via IRLS per channel
+            coeff = ar_model(stat.resid,order);
+            X.coeff = coeff;
         else
-            order = []% do optimum per channel, non-recursive
+            [coeff,~]=ar_model(stat.resid,1,'maxorder',maxorder); % AR final or AR-IRLS first pass
+            X.coeff = coeff;
         end  
-        
-        % construct filter from coefficient weights
-        f = [coeff(1); -coeff(2:end)];
-        
-        % filter design matrix
-        X.Xf = filter(f,1,X.X);
-        
-        % filter data matrix
-        fdat = filter(f,1,dat);
-        
-        % redo model with filters applied
-        if ~is_contrast
-            stat = multregr(X.Xf,fdat);
+
+        % AR-IRLS
+        if contains(X.serial,'AR-IRLS')
+            crit = 2;
+            while crit > 1
+                B = stat.beta;
+                r = stat.resid;
+                stat = weightedLS(X,dat,r,maxorder);
+                crit = (stat.beta - B)/B * 100;
+            end
         else
-            stat = multregr(X.Xf,fdat,'contrast',conmat);
+            stat = weightedLS(X,dat,r,maxorder);
         end
+
     end
     
-    % end of main
+% end of main
+end
+
+function stat = weightedLS(X,dat,r,maxorder)
+% local function to apply filters to regression
+    
+    if isfield(X,'coeff')
+        coeff = X.coeff;
+    else
+        % ar_model from residuals
+        [coeff,~]=ar_model(r,1,'maxorder',maxorder);
     end
+    
+    % construct filter from coefficient weights
+    f = [coeff(1); -coeff(2:end)];
+    
+    % filter design matrix
+    X.Xf = filter(f,1,X.X);
+    
+    % filter data matrix
+    fdat = filter(f,1,dat);
+    
+    % redo model with filters applied
+    if ~is_contrast
+        stat = multregr(X.Xf,fdat);
+    else
+        stat = multregr(X.Xf,fdat,'contrast',conmat);
+    end
+end
