@@ -20,7 +20,7 @@
 %       .r2
 %       .SEb
 %       .pvals
-%       .e 
+%       .resid
 %   X, structure containing Xf, AR filtered design matrix
 % CITATION: If using AR-IRLS approach, Barker et al.(2013). Autoregressive model based algorithm for correcting motion 
 %   and serially correlated errors in fNIRS, Biomedical Optics Express, 4,
@@ -80,17 +80,17 @@ function [stat,X] = nirx_glm(X,dat,varargin)
             X.coeff = coeff;
         end  
 
-        % AR-IRLS
+        % AR-IRLS or other AR models
         if contains(X.serial,'AR-IRLS')
-            crit = 2;
-            while crit > 1
+            crit = 2; % percent change in beta
+            while crit(1) > 1
                 B = stat.beta;
                 r = stat.resid;
                 stat = weightedLS(X,dat,r,maxorder);
                 crit = (stat.beta - B)/B * 100;
             end
         else
-            stat = weightedLS(X,dat,r,maxorder);
+            stat = weightedLS(X,dat,stat.resid,maxorder);
         end
 
     end
