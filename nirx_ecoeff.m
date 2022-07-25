@@ -1,10 +1,11 @@
 % PURPOSE: returns extinction coefficient for use in MBLL calculation from
 % lookup tables, currently supports Cope, Moaveni, Prahl and Takatani
 % (citations in mat file tables)
-% 
+% AUTHOR: D. Rojas
 % INPUT: wl, wavelength
 %        table, 'string' (optional input, default is 'Moaveni'
 % OUTPUT: ec, extinction coefficients for HbO & Hbr
+% SEE ALSO: nirx_OD, nirx_DPF, nirx_MBLL
 
 % Main
 function ec = nirx_ecoeff(wl,varargin)

@@ -21,14 +21,9 @@ function [coeff, order] = ar_model(y,order,varargin)
 % OUTPUTS: coeff = coefficients for AR model n order x 1
 %          lag = order of the model (only informative if 'maxorder' option
 %          employed.
-% NOTE: If you write this function out, then use multregr.m to estimate it,
-%       the code will be independent of econometrics toolbox. Must also write a
-%       lagmatrix.m alternative. Can use convmtx function, as in lags =
-%       convmtx(y,order); convmtx output is similar to lagmatrix, but if convmtx order is 4, only
-%       2:4 will be lagged. 1 will be original y vector input. For lagmatrix, 1
-%       will be lag 1. So, lags(:,1) in convmtx(y,4) is actually = y, and
-%       lags(:,2) = 1st lag (order = 1). See also discussion here:
+% NOTE: Related discussion here:
 %       https://www.mathworks.com/matlabcentral/answers/618833-manually-write-code-for-a-vector-autoregression
+% SEE ALSO: timelags
 
 % defaults
 maxorder = order;

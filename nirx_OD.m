@@ -1,12 +1,12 @@
-% PURPOSE: function to compute optical density from raw signal (intensity)
-% AUTHOR: D. Rojas
-% INPUTS:  raw, nchan x npoints x n wavelengths matrix (see nirx_read_wl.m)
-% OUTPUTS: od, optical density
+% PURPOSE:  function to compute optical density from raw signal voltages (intensity)
+% AUTHOR:   D. Rojas
+% INPUTS:   raw, nchan x npoints x n wavelengths matrix (see nirx_read_wl.m)
+% OUTPUTS:  od, optical density
 % CITATION: Strangman et al. (2003). Factors affecting the accuracy 
-%    of near-infrared spectroscopy concentration calculations for 
-%    focal changes in oxygenation parameters Neuroimage, 4, 865-879.
-% HISTORY: 07/08/2022 - first created
-% SEE ALSO: nirx_OD, nirx_DPF, nirx_ecoeff
+%           of near-infrared spectroscopy concentration calculations for 
+%           focal changes in oxygenation parameters Neuroimage, 4, 865-879.
+% HISTORY:  07/08/2022 - first created
+% SEE ALSO: nirx_DPF, nirx_ecoeff, nirx_MBLL
 function od = nirx_OD(raw)
 
 s = size(raw);

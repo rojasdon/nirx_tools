@@ -35,7 +35,7 @@ posfile = 'optode_positions.csv';
 chconfig = 'ch_config.txt';
 
 % load nirx data
-filebase = 'NIRS-2021-09-28_001';
+filebase = 'NIRS-2021-09-28_002';
 hdr = nirx_read_hdr([filebase '.hdr']);
 [raw, cols, S,D] = nirx_read_wl(filebase,hdr);
 nchans = size(raw,3);

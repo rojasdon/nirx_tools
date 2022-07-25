@@ -66,7 +66,7 @@ if any(X(:,1) ~= 1)
 end
 
 % betas
-b = inv(X'*X)*X'*y;
+b = pinv(X'*X)*X'*y;
 
 % predicted scores and residuals
 yhat = X*b; % predicted scores
@@ -109,18 +109,17 @@ stat.resid = e;
 % Wald follows F or X^2 distribution. F stat = T^2. Student T statistic is
 % related to Wald W and F as follows: T^2 = W = F.
 if is_contrast
+    for ii = 1:size(conmat,1)
+        con_est = conmat(ii,:)*stat.beta;
+        contrast.tvals(ii) = ...
+            sqrt(con_est'*pinv(conmat(ii,:)*stat.Cov*conmat(ii,:)')*con_est);
+        contrast.pvals(ii) = ...
+            betainc(df_resid/(df_resid+(contrast.tvals(ii)^2)),0.5*df_resid,0.5);
+    end
+    stat.contrast = contrast;
     % check that contrast weights sum to zero (centered)
     if any(sum(conmat,2) ~= 0)
-        Warning('Contrast row weights do not sum to zero!');
-    else
-        for ii = 1:size(conmat,1)
-            con_est = conmat(ii,:)*stat.beta;
-            contrast.tvals(ii) = ...
-                sqrt(con_est'*inv(conmat(ii,:)*stat.Cov*conmat(ii,:)')*con_est);
-            contrast.pvals(ii) = ...
-                betainc(df_resid/(df_resid+(contrast.tvals(ii)^2)),0.5*df_resid,0.5);
-        end
-        stat.contrast = contrast;
+        stat.contrast.warning = "Some contrast row weights do not sum to zero!";
     end
 end
 

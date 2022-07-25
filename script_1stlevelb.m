@@ -9,37 +9,34 @@ q_fdr = .05;
 screen = get(0,'screensize'); % for setting figure size and location
 screen_h = screen(4);
 screen_w = screen(3);
-block_dur = 18; % for joystick task
-% block_dur = 12; % for tapping experiment
-con_2_plot = 2; % contrast number for plotting
-beta_2_plot = 2; % beta to plot
+%block_dur = 18; % for joystick task
+block_dur = 12; % for tapping experiment
+con_2_plot = 3; % contrast number for plotting
+beta_2_plot = 1; % beta to plot
 condition_names = {'Constant','Left Finger','Right Finger','Right Foot','Rest'}; 
 %condition_names = {'Constant','ExR_Lat','ImR_Lat','ExL_Vert',...
 %     'ImL_Vert','ExR_Vert','ImR_Vert','ExL_Lat','ImL_Lat','Rest'};
 % some contrasts for joystick task (columns for intercept + 8 conditions + regressor of no interest).
 % Implicit baseline
-conmat = [0 1 0 0 0 1 0 0 0 0 0 0   % all right movements against baseline
-          0 0 0 1 0 0 0 1 0 0 0 0   % all left movements against baseline
-          0 1 0 1 0 1 0 1 0 0 0 0   % all movements against baseline
-          0 -1 0 1 0 -1 0 1 0 0 0 0  % left > right
-          0 1 0 -1 0 1 0 -1 0 0 0 0  % right > left
-          0 1 -1 1 -1 1 -1 1 -1 0 0 0  % Ex > Im
-          0 -1 1 -1 1 -1 1 -1 1 0 0 0]; % Im > Ex
+%conmat = [0 1 0 0 0 1 0 0 0 0 0 0   % all right movements against baseline
+%          0 0 0 1 0 0 0 1 0 0 0 0   % all left movements against baseline
+%          0 1 0 1 0 1 0 1 0 0 0 0   % all movements against baseline
+%          0 -1 0 1 0 -1 0 1 0 0 0 0  % left > right
+%          0 1 0 -1 0 1 0 -1 0 0 0 0  % right > left
+%          0 1 -1 1 -1 1 -1 1 -1 0 0 0  % Ex > Im
+%          0 -1 1 -1 1 -1 1 -1 1 0 0 0]; % Im > Ex
 
 % some contrasts for tapping task (columns for intercept + 3 conditions).
 % Implicit baseline contrasts, need zero for any column of confound
 % regressor
-%conmat = [0 0 .5 .5 0
-%          0 1 0 0 0
-%          0 0 1 0 0
-%          0 0 0 1 0
-%          0 -1 1 0 0
-%          0 .5 .5 -1 0
-%          0 0 1 -1 0];
-baseline_condition = 9; % 4 for tapping task, 9 for joystick task
+conmat = [0 0 .5 0 0
+          0 1 0 0 0
+          0 0 1 0 0
+          0 0 0 1 0];
+baseline_condition = 4; % 4 for tapping task, 9 for joystick task
 
 % load header and data
-filebase = 'NIRS-2021-09-28_001';
+filebase = 'NIRS-2021-09-28_002';
 load([filebase '_hb_sd.mat']);
 hdr = nirx_read_hdr([filebase '.hdr']);
 dat = hbo_HR';
@@ -65,7 +62,7 @@ Xorig.values = vals;
 Xorig.onsets = onsets;
 Xorig.baseline = baseline_condition;
 Xorig.implicit = 'yes';
-Xorig.serial = 'AR'; % 'AR'
+Xorig.serial = 'AR-IRLS'; % 'AR'
 
 % PCA for global short channel and global Mayer Wave
 hbo_HR_short = hbo_HR_short';
@@ -81,14 +78,14 @@ for chn = 1:size(longpos,1)
     % global Mayer wave, to design matrix
     % X.R = [squeeze(nearest_hr_sd(chn,:,1))' squeeze(nearest_mw_sd(chn,:,1))' ...
     %    pc_short pc_MW];
-    X.R = [squeeze(nearest_hr_sd(chn,:,1))' pc_short squeeze(nearest_mw_sd(chn,:,1))']; % only short
+    X.R = squeeze(nearest_hr_sd(chn,:,1))'; % only short
     if chn == 1
         X = nirx_design_matrix(X,true);
     else
         X = nirx_design_matrix(X,false);
     end
-    X.X = spm_orth(X.X); % put this into design matrix function!
-    [stat(chn), X] = nirx_1stlevel(X,dat(:,hdr.longSDindices(chn)),'contrast',conmat);
+    % X.X = spm_orth(X.X); % put this into design matrix function!
+    [stat(chn), X] = nirx_glm(X,dat(:,hdr.longSDindices(chn)),'contrast',conmat);
 end
 
 % plotting basic brain setup

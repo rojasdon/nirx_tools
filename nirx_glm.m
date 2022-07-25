@@ -68,7 +68,7 @@ function [stat,X] = nirx_glm(X,dat,varargin)
     % Wy = WXβ + Wε, where weights are applied using filter to both sides
     % of equation
     if contains(X.serial,'AR')
-        maxorder = ceil(1/X.dt);
+        maxorder = 5*ceil(1/X.dt);
         % determine type of AR model requested
         if contains(X.serial,'AR(')
             pindex = find(ismember(X.serial,')'));
@@ -86,19 +86,27 @@ function [stat,X] = nirx_glm(X,dat,varargin)
             while crit(1) > 1
                 B = stat.beta;
                 r = stat.resid;
-                stat = weightedLS(X,dat,r,maxorder);
-                crit = (stat.beta - B)/B * 100;
+                if ~is_contrast
+                    stat = weightedLS(X,dat,r,maxorder);
+                else
+                    stat = weightedLS(X,dat,r,maxorder,conmat);
+                end
+                crit = abs((stat.beta - B)./B * 100);
             end
         else
-            stat = weightedLS(X,dat,stat.resid,maxorder);
+            if ~is_contrast
+                stat = weightedLS(X,dat,stat.resid,maxorder);
+            else
+                stat = weightedLS(X,dat,stat.resid,maxorder,conmat);
+            end
         end
-
+        stat.order = length(X.coeff);
     end
     
 % end of main
 end
 
-function stat = weightedLS(X,dat,r,maxorder)
+function stat = weightedLS(X,dat,r,maxorder,varargin)
 % local function to apply filters to regression
     
     if isfield(X,'coeff')
@@ -113,14 +121,15 @@ function stat = weightedLS(X,dat,r,maxorder)
     
     % filter design matrix
     X.Xf = filter(f,1,X.X);
+    X.Xf(:,1) = 1;
     
     % filter data matrix
     fdat = filter(f,1,dat);
     
     % redo model with filters applied
-    if ~is_contrast
+    if nargin < 5
         stat = multregr(X.Xf,fdat);
     else
-        stat = multregr(X.Xf,fdat,'contrast',conmat);
+        stat = multregr(X.Xf,fdat,'contrast',varargin{1});
     end
 end
