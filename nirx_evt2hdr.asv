@@ -1,4 +1,4 @@
-function nirx_evt2hdr(evtfile,hdrfile)
+function nirx_evt2hdr(evtfile,hdrfile,backupfiles)
 % PURPOSE: To update header file events with evt file events, in case
 % customization of event file is done after acquisition
 % AUTHOR: D. Rojas
@@ -12,8 +12,7 @@ function nirx_evt2hdr(evtfile,hdrfile)
 % read the event file
 [ons,val] = nirx_read_evt(evtfile);
 
-% read in the header file as single cell array and as a hdr struct
-hdr = nirx_read_hdr(hdrfile);
+% read in the header file as single cell array
 s = fileread(hdrfile);
 
 % first, find the event part of the header
@@ -34,18 +33,13 @@ delete(hdrfile);
 fp = fopen(hdrfile,"w");
 
 % start writing back to insertion point
-fprintf(fp,'%s\n',s_pre);
+fprintf(fp,'%s')
 
 % at insertion, replace/add something as follows, looping through onsets
-fprintf(fp,'[Markers]\n');
-fprintf(fp,'Events="#\n');
-for line=1:length(ons)
-    fprintf(fp,'%.2f\t%d\t%d\n',ons(line)*1/hdr.sr,val(line),ons(line));
-end
-fprintf(fp,'#"\n');
+
+fprintf(fp,'%.2f\t%d\t%d\n',ons(line)*1/hdr.sr,val(line),ons(line));
 
 % write the remainder of the header string
-fprintf(fp,s_post);
 
-% close file
-fclose(fp);
+
+end
