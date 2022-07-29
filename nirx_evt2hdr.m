@@ -1,16 +1,29 @@
-function nirx_evt2hdr(evtfile,hdrfile)
-% PURPOSE: To update header file events with evt file events, in case
-% customization of event file is done after acquisition
-% AUTHOR: D. Rojas
+function nirx_evt2hdr(evtfile,hdrfile,varargin)
+% PURPOSE:  To update header file events with evt file events, in case
+%           customization of event file is done after acquisition
+% AUTHOR:   D. Rojas
 % INPUTS:   1. evtfile, name of event file (.evt ext)
 %           2. hdrfile, name of header file (.hdr ext)
 %           3. backupfiles, true|false, makes copy of
 %           original header as _original_backup.hdr
-% OUTPUTS: None on command line, writes new hdr file
-% HISTORY: 07/18/2022 - first working version
+% OUTPUTS:  None on command line, writes new hdr file to disk and makes
+%           backup file
+% HISTORY:  07/18/2022 - first working version
+%           07/29/2022 - added trigger deletion option, useful for removing
+%           baseline/rest triggers, which are normally not recommended for design
+%           matrices
+% SEE ALSO: nirx_read_hdr, nirx_read_evt
 
 % read the event file
 [ons,val] = nirx_read_evt(evtfile);
+if nargin == 3 % remove requested triggers, if any
+    toremove =  varargin{1};
+    for n=1:length(toremove)
+        ind = find(val == toremove(n));
+        ons(ind) = [];
+        val(ind) = [];
+    end
+end
 
 % read in the header file as single cell array and as a hdr struct
 hdr = nirx_read_hdr(hdrfile);
