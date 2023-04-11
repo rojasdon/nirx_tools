@@ -6,7 +6,7 @@
 % her/his own ch_config.txt and optode_positions.csv in their directories
 
 % Authors: Don Rojas, Ph.D.
-%         Matt Mathison
+%          Matt Mathison
 % Version history: first working version 03/22/2018
 
 clear;

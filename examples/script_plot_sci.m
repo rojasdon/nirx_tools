@@ -44,20 +44,16 @@ camlight left; camlight right;
 lighting gouraud;
 rotate3d on;
 
-% plot sources as red - nirx convention
-nirx_plot_optode3d(pos(sind,:),S,N,'offset',10,'edgecolor',[1 0 0],...
-    'facealpha',.4,'facecolor',[1 0 0],'labels',lbl(sind));
-
-% plot long detectors as red - nirx convention
-nirx_plot_optode3d(pos(dind,:),S,N,'offset',10,'edgecolor',[0 1 0],...
-    'facealpha',.4,'facecolor',[0 1 0],'labels',lbl(dind));
-
-% plot short detectors as black circles
-nirx_plot_optode3d(shortpos,S,N,'offset',offset,'edgecolor',[0 0 0],'facecolor',[1 0 0]);
-
 % plot channels formed
-%for ii=1:length(longpos)
-%    chanlabels{ii} = str2cell(num2str(ii),1);
-%end
-%nirx_plot_optode3d(longpos,S,N,'offset',12,'edgecolor',[0 0 0],'facecolor',[0 0 1]);
+for ii=1:length(longpos)
+    chanlabels{ii} = str2cell(num2str(ii),1);
+end
+
+% colors from sci
+sci_color = [sci(ldind)' zeros(length(chpairs(ldind)),1) zeros(length(chpairs(ldind)),1)];
+zind = find(sci_color(:,1,1) < 0);
+sci_color(zind,:) = zeros(length(zind),3);
+nirx_plot_optode3d(longpos,S,N,'offset',12,'edgecolor',[0 0 0],'facecolor',sci_color);
+h = colorbar();
+h.Label.String = 'Scalp Coupling Index';
 
