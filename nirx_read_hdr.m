@@ -41,7 +41,7 @@ end
 nirx.shortbundles = 0;
 
 % read file information
-C = readtext(file); % new way, ultimately replace rest of line by line]
+C = readtext(file); % new way, ultimately replace rest of line by line
 exp = '=';
 for ii=1:length(C)
     [hit, nohit] = regexp(char(C{ii}),exp,'match','split');
