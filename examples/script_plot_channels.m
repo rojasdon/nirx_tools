@@ -2,7 +2,7 @@
 
 %clear;
 
-filebase = 'NIRS-2021-09-28_001'; % file to plot
+filebase = 'NIRS-2017-05-02_001'; % file to plot
 offset = 10;
 
 % read header to get the short channels, if any

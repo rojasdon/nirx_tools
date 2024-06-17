@@ -14,6 +14,8 @@ function nirx = nirx_read_hdr(file,varargin)
 %                backward compatible with versions 14-15.1
 %   10/12/2021 - slight update to add long detector indices for ease of use
 %   03/02/2022 - added field ch_type to sort long vs short channels easily
+%   10/10/2022 - fixed to make backcompatible with older NIRStar 13, 14
+%                hdr formats
 
 % TODO: 1. Add in cross talk read. It is only in headers for data files
 % with multiple sources activated simultaneously, since for sequential
@@ -35,9 +37,11 @@ else
     error('File not found!');
 end
 
+% defaults changed by options
+nirx.shortbundles = 0;
+
 % read file information
-C = readtext(file); % new way, ultimately replace rest of line by line
-C = C(:,1);
+C = readtext(file); % new way, ultimately replace rest of line by line]
 exp = '=';
 for ii=1:length(C)
     [hit, nohit] = regexp(char(C{ii}),exp,'match','split');
@@ -130,6 +134,8 @@ if nirx.shortbundles ~= 0
     shortdets = str2num(nirx.shortdetindex);
     lastlongdet = min(shortdets) - 1;
     nirx.shortdetindex = shortdets;
+else
+    shortchan = false;
 end
 
 % loop through line by line to process other info

@@ -1,20 +1,22 @@
 function hnd = nirx_plot2d(data,coords,varargin)
-%PURPOSE:   plots 2D channel map of sensor data
-%AUTHOR:    Don Rojas, Ph.D.  
-%INPUT:     Required: data, to be plotted, 1 x nchan vector
+% PURPOSE:   plots 2D channel map of sensor data
+% AUTHOR:    Don Rojas, Ph.D.  
+% INPUT:     Required: data, to be plotted, 1 x nchan vector, if data is
+%           empty [], then function only plots coordinates supplied.
 %           coords = 3d or 2d coordinates for plotting nchan x 2 or 3 array
 %           'labels', nchan cell array of chan labels, 
 %           'locs', 'on|off', chan locations plotted
 %           'cbar' 'on|off', color bar
 %           'mark' {1 x n} channel vector of channels to mark in red by
 %            name of channel
-%OUTPUT:    handle to figure
-%EXAMPLES:  fig = nirx_plot2d(data,coords,'locs','on') will produce a flatmap projection of
+% OUTPUT:    handle to figure
+% EXAMPLES:  fig = nirx_plot2d(data,coords,'locs','on') will produce a flatmap projection of
 %           the topography of the data with the channel coordinates marked on the
 %           plot
-%SEE ALSO:  
+% SEE ALSO:  
 
-%HISTORY:   12/02/2017 - Adapted from similar function in megtools toolbox
+% HISTORY:   12/02/2017 - Adapted from similar function in megtools toolbox
+%            10/10/2022 - Added flexibility to just plot coords without data
 
 % defaults
 locs   = 1;
