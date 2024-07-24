@@ -2,11 +2,13 @@
 
 %clear;
 
-filebase = 'NIRS-2023-03-31_001'; % file to plot
+filebase = 'NIRS-2024-06-03_002'; % file to plot
 offset = 10;
 
 % read header to get the short channels, if any
 hdr = nirx_read_hdr([filebase '.hdr']);
+[raw, cols, S, D] = nirx_read_wl(filebase,hdr);
+[bad, sci, bpm_lo, bpm_hi] = nirx_signal_quality_sci(hdr,raw);
 
 % surfaces from spm
 spm_dir = fullfile(spm('dir'),'canonical');
@@ -46,7 +48,7 @@ rotate3d on;
 
 % plot channels formed
 for ii=1:length(longpos)
-    chanlabels{ii} = str2cell(num2str(ii),1);
+    chanlabels{ii} = cellstr(num2str(ii));
 end
 
 % colors from sci

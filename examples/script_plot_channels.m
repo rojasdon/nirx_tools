@@ -2,7 +2,7 @@
 
 %clear;
 
-filebase = 'NIRS-2023-03-31_001'; % file to plot
+filebase = 'NIRS-2024-06-03_002'; % file to plot
 offset = 10;
 
 % read header to get the short channels, if any
@@ -49,8 +49,8 @@ nirx_plot_optode3d(pos(sind,:),S,N,'offset',10,'edgecolor',[1 0 0],...
     'facealpha',.4,'facecolor',[1 0 0],'labels',lbl(sind));
 
 % plot long detectors as red - nirx convention
-nirx_plot_optode3d(pos(dind,:),S,N,'offset',10,'edgecolor',[0 1 0],...
-    'facealpha',.4,'facecolor',[0 1 0],'labels',lbl(dind));
+nirx_plot_optode3d(pos(dind(1:31),:),S,N,'offset',10,'edgecolor',[0 1 0],...
+    'facealpha',.4,'facecolor',[0 1 0],'labels',lbl(dind(1:31)));
 
 % plot short detectors as black circles
 nirx_plot_optode3d(shortpos,S,N,'offset',offset,'edgecolor',[0 0 0],'facecolor',[1 0 0]);

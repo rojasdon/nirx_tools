@@ -3,7 +3,7 @@ function [q,bad] = nirx_signal_quality(hdr,data)
 % AUTHOR: Don Rojas, Ph.D.
 % INPUT:
 %   hdr = header structure, from nirx_read_hdr.m
-%   data = raw data, from nirx_read_wl.m
+%   data = raw intensity data, from nirx_read_wl.m
 % OUTPUT:
 %   q, a structure containing the following components:
 %   q.quality = quality metric, comparable to the color coding in NIRStar
@@ -12,16 +12,26 @@ function [q,bad] = nirx_signal_quality(hdr,data)
 %             acceptable, 3 = excellent
 %   q.level = average signal levels per wavelength and channel
 %   q.gain = channel gains
-%   q.noise = coefficient of variation on q.level per channel and wl
+%   q.noise = coefficient of variation on q.level per channel and wl. CV
+%   suggested threshold is > 7.5% = bad
 %   q.dn = dark noise, measured on detectors
+%   q.sci = scalp coupling index
+%   q.powi = structure containing PHOEBE power indices
+%   q.autopower = power spectral peak of autocorrelation data
 %   bad = list of bad channels, but with no details, derived from q.
 % SEE ALSO: NIRStar manual section 8.1 and Table 2 for interpretations
+
+% see also: https://opg.optica.org/abstract.cfm?URI=BRAIN-2020-BM2C.5 and
+% Coefficient of variation method -
+% https://www.mdpi.com/2076-3417/12/1/316#sec2dot4-applsci-12-00316
+% equation 6.
 
 % Revision history:
 % 03/04/2022 - added text output to show bad channels, if any
 % 03/13/2022 - added optional bad channel output for convenient list of bad
 %              channels
 % 03/31/2022 - added q channel info for convenience
+% 04/20/2024 - incorporated SCI, autocorr spectrum and Cui methods
 
 % calculate level and noise measures
 q.level = squeeze(mean(data,2));
@@ -76,11 +86,14 @@ for wl = 1:length(hdr.wl)
     end
 end
 
+% SCI and power index
+[~, q.sci, q.powi,~, ~] = nirx_sci(hdr,data);
+
 % find/report questionable channels
 [wl_ind,bad] = ind2sub(size(q.quality),find(q.quality <= 1));
 bad = unique(bad); % it only takes one bad wavelength
 if ~isempty(bad)
-    fprintf('The following channels are likely bad:\n');
+    fprintf('The following channels are likely bad using NIRx criteria:\n');
     for ii=1:length(bad)
         fprintf('Channel: %d\n',bad(ii));
     end
