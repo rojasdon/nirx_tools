@@ -5,18 +5,24 @@ function nirx_defaults()
 % INPUTS: none
 % OUTPUTS: none
 % HISTORY: 08/29/2022 - first version
+%          09/01/2022 - minor path update
+
+basedir = 'nirx_tools';
 
 % set paths if needed
 p = path;
-if ~contains(p,'nirx_tools')
-    addpath(p,'nirx_tools');
+if ~contains(p,basedir)
+    addpath(p,basedir);
 end
 [pth,~,~] = fileparts(which('nirx_defaults'));
-if ~contains(p,'stats')
+if ~contains(p,fullfile(basedir,'stats'))
     addpath(p,fullfile(pth,'stats'));
 end
-if ~contains(p,'templates')
+if ~contains(p,fullfile(basedir,'templates'))
     addpath(p,fullfile(pth,'templates'));
+end
+if ~contains(p,fullfile(basedir,'examples'))
+    addpath(p,fullfile(pth,'examples'));
 end
 
 % end of main

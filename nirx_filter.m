@@ -21,13 +21,14 @@ function fdata = nirx_filter(data,hdr,type,cutoffs,varargin)
 
 % HISTORY: 07/13/16 - first version, based on megcode filterer.m function
 %          03/03/22 - updated to take data more generically, rather than
-%           only raw wl data
+%                     only raw wl data
+%          07/22/24 - changed default order to 2 from 3
 
 % FIXME: check for installation of signal processing toolbox here
 
 % defaults
 filtind      = [];
-order        = 3;
+order        = 2;
 dB           = .5;
 filt         = 'butter';
 
@@ -100,7 +101,7 @@ B = double(B);
 A = double(A);
 
 % apply filter to data, zero padding to prevent edge problems with moving
-% filter
+% filter (TODO)
 fdata = zeros(size(data));
 fprintf('\nFiltering channel');
 for chn = 1:nchn

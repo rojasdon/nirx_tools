@@ -8,6 +8,8 @@ function [bad, c] = nirx_signalquality_Cui(hbo,hbr)
 %
 % Xu Cui
 % 2009/11/25
+% todo - integrate this and SCI into main signal quality function as
+% outputs, demote the calcs to private functions called by it
 
 n = size(hbo,2);
 for ii=1:n

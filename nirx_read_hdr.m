@@ -19,7 +19,9 @@ function nirx = nirx_read_hdr(file,varargin)
 
 % TODO: 1. Add in cross talk read. It is only in headers for data files
 % with multiple sources activated simultaneously, since for sequential
-% activation, no cross talk is possible. Read NIRStar manual on cross talk.
+% activation, no cross talk is possible. Read NIRStar manual on cross
+% talk. 2. eliminate dependency on readtext.m function. Move to textread.m
+% and/or textscan.m
 
 fprintf('Reading %s...\n', file);
 if nargin > 1

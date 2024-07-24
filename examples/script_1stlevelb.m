@@ -10,10 +10,10 @@ screen = get(0,'screensize'); % for setting figure size and location
 screen_h = screen(4);
 screen_w = screen(3);
 %block_dur = 18; % for joystick task
-block_dur = 12; % for tapping experiment
-con_2_plot = 3; % contrast number for plotting
+block_dur = 15; % for tapping experiment
+con_2_plot = 1; % contrast number for plotting
 beta_2_plot = 1; % beta to plot
-condition_names = {'Constant','Left Finger','Right Finger','Right Foot','Rest'}; 
+condition_names = {'Constant','Left','Right','Rest'}; 
 %condition_names = {'Constant','ExR_Lat','ImR_Lat','ExL_Vert',...
 %     'ImL_Vert','ExR_Vert','ImR_Vert','ExL_Lat','ImL_Lat','Rest'};
 % some contrasts for joystick task (columns for intercept + 8 conditions + regressor of no interest).
@@ -29,14 +29,12 @@ condition_names = {'Constant','Left Finger','Right Finger','Right Foot','Rest'};
 % some contrasts for tapping task (columns for intercept + 3 conditions).
 % Implicit baseline contrasts, need zero for any column of confound
 % regressor
-conmat = [0 0 .5 0 0
-          0 1 0 0 0
-          0 0 1 0 0
-          0 0 0 1 0];
-baseline_condition = 4; % 4 for tapping task, 9 for joystick task
+conmat = [0 1 -1
+          0 -1 1];
+baseline_condition = 2; % 4 for tapping task, 9 for joystick task
 
 % load header and data
-filebase = 'NIRS-2021-09-28_002';
+filebase = 'NIRS-2023-03-31_001';
 load([filebase '_hb_sd.mat']);
 hdr = nirx_read_hdr([filebase '.hdr']);
 dat = hbo_HR';
@@ -48,7 +46,7 @@ chpairs = nirx_read_chconfig('ch_config.txt');
 [longpos,shortpos] = nirx_compute_chanlocs(lbl,pos,chpairs,hdr.shortdetindex);
 
 % read events
-[onsets, vals] = nirx_read_evt([filebase '_corrected.evt']);
+[onsets, vals] = nirx_read_evt([filebase '.evt']);
 nconditions = length(unique(vals));
 
 % construct design matrix
