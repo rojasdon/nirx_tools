@@ -11,12 +11,15 @@ function [longpos,shortpos] = nirx_compute_chanlocs(ids,pos,chns,short_indices)
 %   longpos = n x 3 array of long channel locations
 %   shortpos = same as longpos, but short channels
 
-% NOTE: the midpoint on a straight line isn't accurate given that the
-% points lie on a surface. Some/many will be inside the head.
+% NOTE: the midpoint on a straight line isn't accurate in terms of plotting given that the
+% points lie on a surface. Some/many will be inside the head. But, this is
+% the S-D distance that is relevant to light paths, not the surface
+% distance.
 
 % Revision history
 % 03/01/2022 - fixed short indexing bug, returns short channel positions
 %   separately from longpos
+% 07/25/2024 - minor modification to increase calculation efficiency
 
 % first sort sensors and detectors
 sind = [];
@@ -59,9 +62,7 @@ for ii = 1:nchan
         det_ind = find(ismember(ldnum,chpair(2)));
         Sloc = Spos(source_ind,:);
         Dloc = Dpos(det_ind,:);
-        longpos(ii,1) = (Sloc(1) + Dloc(1))/2;
-        longpos(ii,2) = (Sloc(2) + Dloc(2))/2;
-        longpos(ii,3) = (Sloc(3) + Dloc(3))/2;
+        longpos(ii,:) = (Sloc + Dloc)./2;
     end
 end
 
