@@ -237,6 +237,16 @@ else
     nirx.longSDindices = 1:nirx.nchan;
 end
 
+% catch potential problem of short channels not being in NIRx header mask
+if isempty(nirx.shortSDpairs) & shortchan
+    [~, fbase, ~] = fileparts(file);
+    load([fbase '_probeInfo.mat'],'probeInfo');
+    nirx.shortSDindices = find(probeInfo.probes.index_c(:,2) > lastlongdet);
+    nirx.shortSDpairs = probeInfo.probes.index_c(nirx.shortSDindices,:);
+
+    % NOTE: update nirx.SDmask and nirx.maskind;
+end
+
 
 % read entire original file into string and use regexp to replace mask
 if newfile
