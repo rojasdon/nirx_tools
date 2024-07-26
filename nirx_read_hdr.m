@@ -243,8 +243,15 @@ if isempty(nirx.shortSDpairs) & shortchan
     load([fbase '_probeInfo.mat'],'probeInfo');
     nirx.shortSDindices = find(probeInfo.probes.index_c(:,2) > lastlongdet);
     nirx.shortSDpairs = probeInfo.probes.index_c(nirx.shortSDindices,:);
-
-    % NOTE: update nirx.SDmask and nirx.maskind;
+    nirx.SDpairs = [nirx.SDpairs; nirx.shortSDpairs]; % fix pairs
+    ind = sub2ind(size(nirx.SDmask),nirx.SDpairs(:,1),nirx.SDpairs(:,2)); % update mask
+    tmp = zeros(size(nirx.SDmask));
+    tmp(ind) = 1;
+    nirx.SDmask = tmp;
+    nirx.nchan = length(ind);
+    nirx.chnums = 1:length(ind);
+    nirx.ch_type = [nirx.ch_type; repmat({'short'},1,length(nirx.shortSDindices))'];
+    nirx.dist = [nirx.dist repmat(8,1,length(nirx.shortSDindices))];
 end
 
 
