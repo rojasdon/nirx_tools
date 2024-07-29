@@ -6,6 +6,9 @@ function nirx_write_hdr(file,hdr)
 % OUTPUTS: none on command line, hdr file on disk
 % EXAMPLE:
 %   nirx_write_hdr('filename.hdr',hdr);
+% HISTORY:
+%   07/28/2024 - Added short channel output, crosstalk and darknoise fields
+%                if present
 
 % some older headers do not have certain fields and are encased in isfield
 % logic below
@@ -23,6 +26,8 @@ fprintf(fp,['Subject=' num2str(hdr.sub) '\n']);
 fprintf(fp,'\n[ImagingParameters]\n');
 fprintf(fp,['Sources=' num2str(hdr.sources) '\n']);
 fprintf(fp,['Detectors=' num2str(hdr.detectors) '\n']);
+fprintf(fp,['ShortBundles=' num2str(hdr.shortbundles) '\n']);
+fprintf(fp,['ShortDetIndex="' num2str(hdr.shortdetindex) '"\n']);
 if isfield(hdr,'ShortBundles'); fprintf(fp,['ShortBundles="' num2str(hdr.shortbundles) '"\n']); end
 if isfield(hdr,'ShortDetIndex'); fprintf(fp,['ShortDetIndex="' num2str(nirx.shortdetindex) '"\n']); end
 if isfield(hdr,'steps');fprintf(fp,['Steps=' num2str(hdr.steps) '\n']);end
@@ -32,7 +37,7 @@ fprintf(fp,['TrigOuts=' num2str(hdr.trigout) '\n']);
 fprintf(fp,['AnIns=' num2str(hdr.anins) '\n']);
 fprintf(fp,['SamplingRate=' num2str(hdr.sr) '\n']);
 if isfield(hdr,'mod');fprintf(fp,['ModAmp="' num2str(hdr.mod) '"\n']);end
-fprintf(fp,['Threshold="' num2str(hdr.thres) '"\n']);
+fprintf(fp,['Threshold="' num2str(hdr.threshold) '"\n']);
 fprintf(fp,'\n[Paradigm]\n');
 fprintf(fp,['StimulusType="' hdr.stimtype '"\n']);
 fprintf(fp,'\n[ExperimentNotes]\n');
@@ -47,8 +52,7 @@ for ii=1:nrows
 end
 fprintf(fp,'#"\n');
 fprintf(fp,'\n[Markers]\nEvents="#\n');
-% FIXME: figure out why spm_fnirs_read_nirscout fails to read SD Key if event field is
-% left out
+% events if present
 if isfield(hdr,'events')
     if ~isempty(hdr.events)
         for ii=1:length(hdr.events)
@@ -74,6 +78,38 @@ for ii=1:nrows
     fprintf(fp,'\n');
 end
 fprintf(fp,'#"\n');
+% Dark Noise, if present
+if isfield(hdr,'DarkNoise')
+    fprintf(fp,'\n[DarkNoise]\nWavelength1="#\n');
+    for ii=1:length(hdr.DarkNoise)
+        fprintf(fp,'%.3f\t',hdr.DarkNoise(1,ii));
+    end
+    fprintf(fp,'\n#"');
+    fprintf(fp,'\nWavelength2="#\n');
+    for ii=1:length(hdr.DarkNoise)
+        fprintf(fp,'%.3f\t',hdr.DarkNoise(2,ii));
+    end
+    fprintf(fp,'\n#"\n');
+end
+% CrossTalk, if present (only if lights simultaneously illuminated)
+if isfield(hdr,'CrossTalk')
+    fprintf(fp,'\n[CrossTalk]\nWavelength1="#\n');
+    for src=1:hdr.sources
+        for det=1:hdr.detectors
+            fprintf(fp,'%.2f\t',hdr.CrossTalk(1,src,det));
+        end
+        fprintf(fp,'\n');
+    end
+    fprintf(fp,'#"');
+    fprintf(fp,'\nWavelength2="#\n');
+    for src=1:hdr.sources
+        for det=1:hdr.detectors
+            fprintf(fp,'%.2f\t',hdr.CrossTalk(2,src,det));
+        end
+        fprintf(fp,'\n');
+    end
+    fprintf(fp,'#"\n');
+end
 fprintf(fp,'\n[ChannelsDistance]\nChanDis="');
 for ii=1:length(hdr.dist)-1
     fprintf(fp,'%d\t',hdr.dist(ii));

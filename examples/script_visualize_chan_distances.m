@@ -1,5 +1,8 @@
 % script to plot visualize all possible channel distances given a set of
 % coordinates for optodes. Useful for creating a ch_config.txt file for spm_fnirs
+% could modify to create hdr file with new mask based on allowed distances,
+% but would need to make sure short channels were included as this is long
+% chan focused. Or, in fact, this is using all channels, so fix that issue!
 
 % must have optode_positions.csv file to work with
 % file should have single header line: Ch, Source, Detector
@@ -13,7 +16,7 @@ clear all;
 % defaults
 plotopt = 1; % set to zero to view raw distances for all channels
 new_config = 1; % set to one to write a new ch_config.txt file based on your desired distances, set by thresh
-thresh = [10 50];
+thresh = [20 40]; % range of distances allowed
 
 % read file
 posfile = 'optode_positions.csv';

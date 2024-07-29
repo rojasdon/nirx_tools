@@ -3,6 +3,9 @@ function nb = nirx_nearest_neighbors(chanpos)
 % INPUT: chanpos = n x 3 positions of channels
 % OUTPUT: nb = nchan x nchan matrix of Euclidean distances
 % SEE ALSO: nirx_read_optpos.m
+% TODO: rename this nirx_neighbors.m and/or expand so that this function
+% returns either short, long or both channels sorted by dist to detectors.
+% Modify related functions as needed e.g. nirx_nearest_short.m
 
 nchan = length(chanpos);
 for ii = 1:nchan

@@ -16,12 +16,12 @@ function nirx = nirx_read_hdr(file,varargin)
 %   03/02/2022 - added field ch_type to sort long vs short channels easily
 %   10/10/2022 - fixed to make backcompatible with older NIRStar 13, 14
 %                hdr formats
+%   07/26-27/2024 - fixes to issues relating to missing shortchannels,
+%                   mostly when short channels are excluded from NIRStar mask.
+%   07/28/2024 - Added crosstalk read, if field is present
 
-% TODO: 1. Add in cross talk read. It is only in headers for data files
-% with multiple sources activated simultaneously, since for sequential
-% activation, no cross talk is possible. Read NIRStar manual on cross
-% talk. 2. eliminate dependency on readtext.m function. Move to textread.m
-% and/or textscan.m
+% TODO: 1.  eliminate dependency on readtext.m function. Move to textread.m
+%           and/or textscan.m
 
 fprintf('Reading %s...\n', file);
 if nargin > 1
@@ -101,9 +101,7 @@ for ii=1:length(C)
     end
 end
 
-% S-D-Key: note - something is wrong with the nirx S-D-Key. It has more
-% channels combined than are actually possible given nsource*ndetector
-% pairings
+% S-D-Key
 clear C;
 C=fileread(file);
 exp = 'S-D-Key="(\w+).*?"';
@@ -144,7 +142,7 @@ end
 for ii=1:7
     junk = fgetl(fp);
 end
-search_strings = {'S-D-Mask','Gains','Events','[DarkNoise]','ChanDis'};
+search_strings = {'S-D-Mask','Gains','Events','[DarkNoise]','[CrossTalk]','ChanDis'};
 while ~feof(fp)
     line = fgetl(fp);
     loc  = find(strncmp(line,search_strings,5));
@@ -200,6 +198,26 @@ while ~feof(fp)
                     line = fgetl(fp);
                 end
                 nirx.DarkNoise  = dn;
+            case 5 % Cross Talk
+                % continue; % not working currently
+                line = fgetl(fp);
+                while isempty(strfind(line,tofind))
+                    nums = textscan(line,'%.2f');
+                    CT(ind,:) = nums{1}';
+                    ind = ind + 1;
+                    line = fgetl(fp);
+                end
+                nirx.CrossTalk(1,:,:)  = CT;
+                CT = [];
+                ind = 1;
+                line = fgetl(fp); line = fgetl(fp);
+                while isempty(strfind(line,tofind))
+                    nums = textscan(line,'%.2f');
+                    CT(ind,:) = nums{1}';
+                    ind = ind + 1;
+                    line = fgetl(fp);
+                end
+                nirx.CrossTalk(2,:,:)  = CT;
         end
     end
 end
@@ -252,10 +270,17 @@ if isempty(nirx.shortSDpairs) & shortchan
     nirx.chnums = 1:length(ind);
     nirx.ch_type = [nirx.ch_type; repmat({'short'},1,length(nirx.shortSDindices))'];
     nirx.dist = [nirx.dist repmat(8,1,length(nirx.shortSDindices))];
+    nirx.maskind = ind;
+end
+
+% final check
+if nirx.nchan ~= length(nirx.maskind)
+    warning('Check channel numbers - hdr field do not agree!');
 end
 
 
-% read entire original file into string and use regexp to replace mask
+% read entire original file into string and use regexp to replace mask,
+% probably replace this with nirx_write_hdr.m when fully tested
 if newfile
     orig = fileread(file); 
     totrim = 'S-D-Mask="#';
