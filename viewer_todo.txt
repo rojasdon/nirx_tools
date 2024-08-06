@@ -1,0 +1,21 @@
+fnirs viewer todo:
+1. Finish basic view options
+	a. hb vs raw
+	b. select hbo, hbr, hbt for hb opt
+	c. select wl for raw opt
+	d. checkbox select b and c for overlay or not
+	e. plot short, long, or both types of channels
+	f. baseline removal check for plot updates
+	g. plotting events
+	h. integrate plot options into one app.variable for consistent plot calls
+	i. stacked vs. butterfly plots
+	j. number of channels to plot
+2. Add topographic view panel
+	a. channels 2d vs. 3d
+	b. highlight channels in topo to select in plot and vice versa
+3. Add basic processing steps
+	a. Trim/select bad data by eye
+	b. Select/remove bad channels by NIRx, SCI, PHOEBE
+	c. Apply Beer-Lambert, with options (DPF, age, etc.)
+	d. Motion correction
+4. Save processed dataset
