@@ -4,7 +4,7 @@ fnirs viewer todo:
 	b. select hbo, hbr, hbt for hb opt
 	c. select wl for raw opt
 	d. checkbox select b and c for overlay or not
-	e. plot short, long, or both types of channels
+	e. plot short, long, or both types of channels (could add as button option to each group)
 	f. baseline removal check for plot updates
 	g. plotting events
 	h. integrate plot options into one app.variable for consistent plot calls

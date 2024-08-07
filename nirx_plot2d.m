@@ -17,6 +17,7 @@ function hnd = nirx_plot2d(data,coords,varargin)
 
 % HISTORY:   12/02/2017 - Adapted from similar function in megtools toolbox
 %            10/10/2022 - Added flexibility to just plot coords without data
+%            08/06/2024 - fixed 10/10 to work
 
 % defaults
 locs   = 1;
@@ -59,7 +60,11 @@ end
 if size(coords,2) == 3
     % do projection of 3D positions into 2D map
     loc2d      = double(thetaphi(coords')); %flatten
-    loc2d(2,:) = -loc2d(2,:); %reverse y direction
+    loc2d(3,:) = []; % remove 3rd dim
+    tmp = loc2d(1,:);
+    loc2d(1,:) = loc2d(2,:);
+    loc2d(2,:) = tmp; % reverse x,y
+    loc2d(2,:) = loc2d(2,:).* -1; % rotate clockwise 90 (loc2d(1,:) for anti-clockwise)
 elseif size(coords,2) == 2
     loc2d = coords;
 else
@@ -70,11 +75,16 @@ end
 xlin  = linspace(min(loc2d(2,:)),max(loc2d(2,:)));
 ylin  = linspace(min(loc2d(1,:)),max(loc2d(1,:)));
 [x,y] = meshgrid(xlin,ylin);
-Z     = griddata(loc2d(2,:),loc2d(1,:),double(data),x,y);
+if ~isempty(data)
+    Z  = griddata(loc2d(2,:),loc2d(1,:),double(data),x,y);
+end
 
 % plot result on new figure
-contourf(x,y,Z,20);
-hold on;   
+if ~isempty(data)
+    contourf(x,y,Z,20);
+end
+h = figure('Color','w');
+hold on;
 if labelson
     for ii=1:length(loc2d)
         text(loc2d(2,ii),loc2d(1,ii),labels(ii),'FontSize',8);
