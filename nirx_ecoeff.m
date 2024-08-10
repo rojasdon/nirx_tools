@@ -6,9 +6,11 @@
 %        table, 'string' (optional input, default is 'Moaveni'
 % OUTPUT: ec, extinction coefficients for HbO & Hbr
 % SEE ALSO: nirx_OD, nirx_DPF, nirx_MBLL
+% HISTORY: 08/10/2024 - revised to output interpolated data for nice plots
+%                       + bugfix for certain cases of interpolation
 
 % Main
-function ec = nirx_ecoeff(wl,varargin)
+function [ec,iec,allwl] = nirx_ecoeff(wl,varargin)
     % defaults
     if nargin > 1
         table = varargin{1};
@@ -19,34 +21,35 @@ function ec = nirx_ecoeff(wl,varargin)
     
     switch table
         case 'Moaveni'
-            load(fullfile(table_path,'templates','Moaveni_ecoeff.mat'));
+            table = load(fullfile(table_path,'templates','Moaveni_ecoeff.mat'));
         case 'Prahl'
-            load(fullfile(table_path,'templates','Prahl_ecoeff.mat'));
+            table = load(fullfile(table_path,'templates','Prahl_ecoeff.mat'));
         case 'Cope'
-            load(fullfile(table_path,'templates','Cope_ecoeff.mat'));
+            table = load(fullfile(table_path,'templates','Cope_ecoeff.mat'));
         case 'Takatani'
-            load(fullfile(table_path,'templates','Takatani_ecoeff.mat'));
+            table = load(fullfile(table_path,'templates','Takatani_ecoeff.mat'));
         otherwise
             error('requested table does not exist!');
     end
     
     % find wavelengths (lambda), spline interpolate if not found
-    ind =  find(ecoeffs(:,1) == wl);
-    if ~isempty(ind)
-        ec = ecoeffs(ind,2:3);
-    else
-        min_ecoeff = min(ecoeffs(:,1));
-        max_ecoeff = max(ecoeffs(:,1));
-        if wl > min_ecoeff && wl < max_ecoeff
-            allwl = min_ecoeff:1:max_ecoeff;
-            iec(:,1) = spline(ecoeffs(:,1),ecoeffs(:,2),allwl);
-            iec(:,2) = spline(ecoeffs(:,1),ecoeffs(:,3),allwl);
-            ec = iec(allwl == wl,:);
-            fprintf('Wavelength not found in table.\nUsing interpolated values for %d nm\n',wl);
+    min_ecoeff = min(table.ecoeffs(:,1));
+    max_ecoeff = max(table.ecoeffs(:,1));
+    allwl = min_ecoeff:1:max_ecoeff;
+    iec(:,1) = spline(table.ecoeffs(:,1),table.ecoeffs(:,2),allwl);
+    iec(:,2) = spline(table.ecoeffs(:,1),table.ecoeffs(:,3),allwl);
+    for w = 1:length(wl)
+        ind = find(table.ecoeffs(:,1) == wl(w));
+        if ~isempty(ind)
+            ec(w,:) = table.ecoeffs(ind,2:3);
         else
-            error('%d nm is outside range of requested table!',wl);
+            if wl(w) > min_ecoeff && wl(w) < max_ecoeff
+                ec(w,:) = iec(allwl == wl(w),:);
+                fprintf('Wavelength not found in table. Using interpolated values for %d nm\n',wl(w));
+            else
+                error('%d nm is outside range of requested table!',wl);
+            end
         end
     end
-    fprintf('Citation:\n%s',citation);
-        
+    fprintf('Citation: %s\n',table.citation);
 end

@@ -19,6 +19,7 @@ function nirx = nirx_read_hdr(file,varargin)
 %   07/26-27/2024 - fixes to issues relating to missing shortchannels,
 %                   mostly when short channels are excluded from NIRStar mask.
 %   07/28/2024 - Added crosstalk read, if field is present
+%   08/10/2024 - more robust fix to missing shortchannels
 
 % TODO: 1.  eliminate dependency on readtext.m function. Move to textread.m
 %           and/or textscan.m
@@ -259,14 +260,15 @@ end
 if isempty(nirx.shortSDpairs) & shortchan
     [~, fbase, ~] = fileparts(file);
     load([fbase '_probeInfo.mat'],'probeInfo');
-    nirx.shortSDindices = find(probeInfo.probes.index_c(:,2) > lastlongdet);
-    nirx.shortSDpairs = probeInfo.probes.index_c(nirx.shortSDindices,:);
+    shortSDindices = find(probeInfo.probes.index_c(:,2) > lastlongdet);
+    nirx.shortSDpairs = probeInfo.probes.index_c(shortSDindices,:);
     nirx.SDpairs = [nirx.SDpairs; nirx.shortSDpairs]; % fix pairs
     ind = sub2ind(size(nirx.SDmask),nirx.SDpairs(:,1),nirx.SDpairs(:,2)); % update mask
     tmp = zeros(size(nirx.SDmask));
     tmp(ind) = 1;
     nirx.SDmask = tmp;
     nirx.nchan = length(ind);
+    nirx.shortSDindices = setdiff(1:nirx.nchan,nirx.longSDindices);
     nirx.chnums = 1:length(ind);
     nirx.ch_type = [nirx.ch_type; repmat({'short'},1,length(nirx.shortSDindices))'];
     nirx.dist = [nirx.dist repmat(8,1,length(nirx.shortSDindices))];

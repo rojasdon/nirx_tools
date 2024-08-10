@@ -1,16 +1,16 @@
-function [chdist,good,stats] = nirx_chan_dist(basename,thresholds,selection,output)
+function [chdist,good] = nirx_chan_dist(hdr,pos,lbl,thresholds,selection,type)
 % function to calculate distances between S-D pairs
 % inputs:
-%   basename = file name base w/o ext
+%   hdr = header from nirx_read_hdr.m
+%   pos = Nchan x 3 positions from nirx_read_optpos.m
+%   lbl = optode labels from nirx_read_optpos.m
 %   thresholds = 1 x 2 vector of lower and upper threshold in mm
 %   selection = 'all' for all possible chans, or 'mask' for those in mask
-%   output = 'yes' to write new corrected hdr and wl files
+%   type = 'all','long', or 'short' channels
 % outputs:
 %   chdist = channel distances, nchan x 1
 %   good = indices of "good" channels by distance, reference to all or mask
 %          as per thresholds setting
-%   stats = structure containing useful data on gains and distances for
-%           extra reporting capability
 
 % FIXME: 1) probably need to sort the S and D indices in case someone inputs S
 % and D out of ascending order in csv file - see
@@ -20,23 +20,15 @@ function [chdist,good,stats] = nirx_chan_dist(basename,thresholds,selection,outp
 % nirx_compute_chanlocs.m for channel locations from s-d pairings
 % Revision history
 % 03/01/2022 - fixed bug related to new short channel indexing
+% 08/10/2024 - flexibility to return different channel types, removed gain
+%              reporting and stats, these are done by other functions now
 
-% defaults
-posfile = 'optode_positions.csv';
-chfile = 'ch_config.txt';
-outext = '_dsel';
-
+% checks/defaults
 d_thresh = thresholds; % dist in mm
 if length(d_thresh) < 2
     error('You must supply an upper and lower boundary threshold!');
 end
-
-% read files
-if ~exist(posfile,'file')
-    error('You must have a position file called %s\n',posfile);
-end
-[~,lbl,pos]=nirx_read_chpos(posfile);
-hdr=nirx_read_hdr([basename '.hdr']);
+output = "no"; % remove this see TODO later
 
 % which channels to compute
 nsource = hdr.sources;
@@ -59,11 +51,11 @@ sind = [];
 ldind = [];
 sdind = [];
 for ii=1:length(lbl)
-    if lbl{ii}{1}(1)=='S'
+    if lbl{ii}(1)=='S'
         sind = [sind ii];
-    elseif lbl{ii}{1}(1)=='D'
+    elseif lbl{ii}(1)=='D'
         if ~isempty(find(ismember(hdr.shortdetindex,...
-                str2double(lbl{ii}{1}(2:end)))))
+                str2double(lbl{ii}(2:end)))))
             sdind = [sdind ii];
         else
             ldind = [ldind ii];
@@ -71,7 +63,14 @@ for ii=1:length(lbl)
     end
 end
 Spos = pos(sind,:);
-Dpos = pos(ldind,:);
+switch type
+    case 'all'
+        Dpos = [pos(ldind,:); pos(sdind,:)];
+    case 'short'
+        Dpos = pos(sdind,:);
+    case 'long'
+        Dpos = pos(ldind,:);
+end
 
 % channel distances
 for ii = 1:length(Sfull)
@@ -80,6 +79,7 @@ for ii = 1:length(Sfull)
     Dloc = Dpos(Dfull(ii),:);      
     chdist(ii,:) = sqrt(sum((Sloc - Dloc).^2, 2));
 end
+chdist(find(ismember(hdr.ch_type,'short'))) = 8; % 8 mm is hard set in NIRx implementation
 
 % mask of distances by threshold
 good = find((chdist <= d_thresh(2)) & (chdist >= d_thresh(1)));
@@ -103,30 +103,7 @@ fprintf('7: n channels > 60 mm: %d\n',length(inds{7}));
 fprintf('Sum of channels: %d\n',runsum);
 fprintf('Good channels by threshold distances: %d\n', length(good));
 
-% report gain info on potentially good chans
-newgains = hdr.gains(good);
-fprintf('# chans within distance threshold with gain <=7: %d\n', length(find(newgains<=7)));
-fprintf('For those channels, mean +/- SD gain are: %.2f +/- %.2f\n', mean(newgains(newgains<=7)),std(double(newgains(newgains<=7))));
-fprintf('For all %d channels in mask, mean +/- SD gain: %.2f +/- %.2f\n', length(good), mean(newgains(:)),std(double(newgains(:))));
-
-% construct stats for convenient data collection
-allgains = hdr.gains;
-gains = zeros(length(ind),1);
-for ii = 1:length(Sfull)
-    gains(ii) = allgains(Sfull(ii),Dfull(ii));
-end
-for ii=1:7
-    mgain(ii) = mean(gains(inds{ii}));
-    sdgains(ii) = std(gains(inds{ii}));
-end
-stats.gainbins = {'<10';'11-20';'21-30';'31-40';'41-50';'51-60';'>60'};
-stats.mgain = mgain;
-stats.sdgains = sdgains;
-stats.sd = [Sfull Dfull];
-stats.allgains = gains;
-stats.dist = roundp(chdist/10,1); % save in cm for spm_fnirs
-
-% output new data if requested
+% output new data if requested TODO - move to separate function
 if strcmpi(output,'yes')
     % new header mask, s-d-key, etc
     newhdr = hdr;
@@ -145,8 +122,8 @@ if strcmpi(output,'yes')
     movefile(chfile,[nam '_cdist_orig' ext]);
     nirx_write_ch_config(chfile,newhdr);
     % write a corrected header file
-    nirx_write_hdr([basename outext '.hdr'],newhdr);
+    nirx_write_hdr([hdr outext '.hdr'],newhdr);
     % copy wl* files to new names for convenience
-    copyfile([basename '.wl1'],[basename outext '.wl1']);
-    copyfile([basename '.wl2'],[basename outext '.wl2']);
+    copyfile([hdr '.wl1'],[hdr outext '.wl1']);
+    copyfile([hdr '.wl2'],[hdr outext '.wl2']);
 end

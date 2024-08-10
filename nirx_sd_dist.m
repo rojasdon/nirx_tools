@@ -37,7 +37,7 @@ end
 if ~exist(posfile,'file')
     error('You must have a position file called %s\n',posfile);
 end
-[~,lbl,pos]=nirx_read_chpos(posfile);
+[~,lbl,pos]=nirx_read_optpos(posfile);
 hdr=nirx_read_hdr([basename '.hdr']);
 
 % which channels to compute
