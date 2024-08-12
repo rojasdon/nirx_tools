@@ -1,4 +1,4 @@
-function [h,XYZoffset] = nirx_plot_optode3d(XYZ,S,N,varargin)
+function XYZoffset = nirx_plot_optode3d(XYZ,S,N,varargin)
 % PURPOSE: plots 3d circles on a surfaces to represent optodes
 % REQUIRED INPUTS:
 % XYZ is n x 3 array of locations to plot circles
@@ -31,11 +31,12 @@ function [h,XYZoffset] = nirx_plot_optode3d(XYZ,S,N,varargin)
 % Revision History
 % 03/01/2022 - Added text label functionality, corrected bug with edge
 %              coloring that only allowed a single scalar
-% 08/12/2024 - revised for greater flexibility, adding axis specification,
-%              handle output and offset xyz output for line plotting
+% 08/12/2024 - revised for greater flexibility, adding axis specification
+%              and offset xyz output for line plotting
 
 % defaults
 ax = 0;
+hold on;
 r = 5; % circle radius in mm
 fa = .95; % transparency
 ec = [0 1 0]; % edge color
@@ -85,27 +86,17 @@ if ~isempty(varargin)
     end
 end
 
-% axis handle
-if ~isgraphics(ax,'Axes') % axis handle not supplied
-    ax = gca;
-end
-hold(ax,'on');
-
-% colors and transparencies
-Npnts = size(XYZ,1);
-if numel(fc) == 3 % all one color
-    fc = repmat(fc,Npnts,1);
-    cmap = colormap(ax); % use default
-else % scale colormap to supplied array
-    cmap = parula(Npnts);       
-end
-
 % deal with input variability
 if size(ec,1) == 1
     ec = repmat(ec,Npnts,1);
 end
 if length(fa) == 1
     fa = repmat(fa,Npnts,1);
+end
+
+% axis handle
+if ~isgraphics(ax,'Axes') % axis handle not supplied
+    ax = gca;
 end
 
 % loop through locations, plotting circles
@@ -139,6 +130,5 @@ colormap(ax,cmap);
 if plotlegend
     h = colorbar(ax,'SouthOutside'); ylabel(h,cbarlabel);
 end
-hold(ax,'off');
 
 end

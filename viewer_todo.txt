@@ -12,10 +12,11 @@ fnirs viewer todo:
 	j. number of channels to plot
 2. Add topographic view panel
 	a. channels 2d vs. 3d (plot optodes vs. channels)
-	b. highlight channels in topo to select in plot and vice versa (difficult)
+	b. highlight channels in topo to select in plot and vice versa (more difficult)
+	c. 2d view on cartoon circle head. 3d view over colin27 scalp
 3. Add basic processing steps
 	a. Trim/select bad data by eye
-	b. Select/remove bad channels by NIRx, SCI, PHOEBE
+	b. Select/remove bad channels by NIRx, SCI, PHOEBE (finish return fcn + export all info, not just bad)
 	c. Apply Beer-Lambert, with options (DPF, age, etc.)
 	d. Motion correction
 4. Save processed dataset

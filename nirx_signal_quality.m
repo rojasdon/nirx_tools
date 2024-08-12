@@ -18,7 +18,7 @@ function [q,bad] = nirx_signal_quality(hdr,data,varargin)
 %   q.sci = scalp coupling index
 %   q.powi = structure containing PHOEBE power indices
 %   q.autopower = power spectral peak of autocorrelation data
-%   bad = list of bad channels, but with no details, derived from q.
+%   bad = list of bad channels, but with no details, derived from q.quality
 % SEE ALSO: NIRStar manual section 8.1 and Table 2 for interpretations
 
 % see also: https://opg.optica.org/abstract.cfm?URI=BRAIN-2020-BM2C.5 and
@@ -75,6 +75,7 @@ end
 q.level = squeeze(mean(data,2));
 dev = squeeze(std(data,[],2));
 q.noise = (dev./q.level)*100;
+q.cv = max(q.noise); % worst wavelength is used for threshold
 q.gain = hdr.gains(hdr.maskind); % only channels in mask
 q.dn = hdr.DarkNoise;
 
@@ -123,27 +124,26 @@ for wl = 1:length(hdr.wl)
         q.quality(wl,chn) = min(quality{wl,chn});
     end
 end
+q.nirx = min(q.quality); % lower wl quality is the nirx metric
 
 % SCI and power index
 [~, q.sci, q.powi,~, ~] = nirx_sci(hdr,data);
 
 % find/report questionable channels
-[wl_ind,bad] = ind2sub(size(q.quality),find(q.quality <= nirx_threshold));
-bad = unique(bad); % it only takes one bad wavelength
+q.shortchans = hdr.shortSDindices;
+q.longchans = hdr.longSDindices;
+q.SDpairs = hdr.SDpairs;
+q.nirx_bad = find(q.nirx <= nirx_threshold)'; % called bad by NIRx standards
+q.sci_bad = find(q.sci < sci_threshold)';
+q.ai_bad = find(q.powi.powi < ai_threshold)';
+q.cv_bad = find(q.cv > cv_threshold)';
+bad = eval(['q.' method '_bad']);
 if ~isempty(bad)
-    fprintf('The following channels are likely bad using NIRx criteria:\n');
+    fprintf('The following channels are likely bad using %s criteria and threshold = %.1f:\n',...
+        method,threshold);
     for ii=1:length(bad)
         fprintf('Channel: %d\n',bad(ii));
     end
 else
     fprintf('All channels pass quality metrics.\n');
 end
-q.shortchans = hdr.shortSDindices;
-q.longchans = hdr.longSDindices;
-q.SDpairs = hdr.SDpairs;
-q.NIRx_bad = bad; % called bad by NIRx standards
-q.SCI_bad = find(q.sci < sci_threshold)';
-q.AI_bad = find(q.powi.powi < ai_threshold)';
-wl1_ind = find(q.noise(1,:) > cv_threshold);
-wl2_ind = find(q.noise(2,:) > cv_threshold);
-q.CV_bad = unique([wl1_ind wl2_ind])';
