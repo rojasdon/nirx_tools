@@ -1,4 +1,4 @@
-function [q,bad] = nirx_signal_quality(hdr,data)
+function [q,bad] = nirx_signal_quality(hdr,data,varargin)
 % PURPOSE: output of various metrics used to evaluate signal quality
 % AUTHOR: Don Rojas, Ph.D.
 % INPUT:
@@ -32,6 +32,44 @@ function [q,bad] = nirx_signal_quality(hdr,data)
 %              channels
 % 03/31/2022 - added q channel info for convenience
 % 04/20/2024 - incorporated SCI, autocorr spectrum and Cui methods
+% 08/11/2024 - optional input to determine method for calling channels bad
+%              for output
+
+% defaults
+method = 'NIRX'; % SCI, AI, or CV also valid
+nirx_threshold = 1;
+sci_threshold = .8;
+ai_threshold = .1;
+cv_threshold = 7.5;
+
+% check/process input arguments
+if ~isempty(varargin)
+    optargin = size(varargin,2);
+    if (mod(optargin,2) ~= 0)
+        error('Optional arguments must come in option/value pairs');
+    else
+        for i=1:2:optargin
+            switch varargin{i}
+                case 'method'
+                    method = varargin{i+1};
+                case 'threshold'
+                    threshold = varargin{i+1};
+                otherwise
+                    error('Invalid option!');
+            end
+        end
+    end
+end
+switch method
+    case "NIRx"
+        nirx_threshold = threshold;
+    case "SCI"
+        sci_threshold = threshold;
+    case "AI"
+        ai_threshold = threshold;
+    case "CV"
+        cv_threshold = threshold;
+end
 
 % calculate level and noise measures
 q.level = squeeze(mean(data,2));
@@ -90,7 +128,7 @@ end
 [~, q.sci, q.powi,~, ~] = nirx_sci(hdr,data);
 
 % find/report questionable channels
-[wl_ind,bad] = ind2sub(size(q.quality),find(q.quality <= 1));
+[wl_ind,bad] = ind2sub(size(q.quality),find(q.quality <= nirx_threshold));
 bad = unique(bad); % it only takes one bad wavelength
 if ~isempty(bad)
     fprintf('The following channels are likely bad using NIRx criteria:\n');
@@ -103,4 +141,9 @@ end
 q.shortchans = hdr.shortSDindices;
 q.longchans = hdr.longSDindices;
 q.SDpairs = hdr.SDpairs;
-q.bad = bad; % called bad by NIRx standards
+q.NIRx_bad = bad; % called bad by NIRx standards
+q.SCI_bad = find(q.sci < sci_threshold)';
+q.AI_bad = find(q.powi.powi < ai_threshold)';
+wl1_ind = find(q.noise(1,:) > cv_threshold);
+wl2_ind = find(q.noise(2,:) > cv_threshold);
+q.CV_bad = unique([wl1_ind wl2_ind])';

@@ -11,8 +11,8 @@ fnirs viewer todo:
 	i. stacked vs. butterfly plots
 	j. number of channels to plot
 2. Add topographic view panel
-	a. channels 2d vs. 3d
-	b. highlight channels in topo to select in plot and vice versa
+	a. channels 2d vs. 3d (plot optodes vs. channels)
+	b. highlight channels in topo to select in plot and vice versa (difficult)
 3. Add basic processing steps
 	a. Trim/select bad data by eye
 	b. Select/remove bad channels by NIRx, SCI, PHOEBE
