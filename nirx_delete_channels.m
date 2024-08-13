@@ -12,10 +12,12 @@ function nirx_delete_channels(basename,bad,varargin)
 %   nirx_delete_optodes('test',[1:4],[2:3],'correct')
 
 % History:
-%       07/02/16 - fixed some bugs with indexing of SDpairs and key
-%       07/04/16 - fixed issue with ch_config.txt correction
+%       07/02/16 - first working version as nirx_delete_optodes.m
 %       08/12/2024 - major revision to comply with latest header, dropping
-%       use of ch_config.txt file for channel pairings
+%                    use of ch_config.txt file for channel pairings,
+%                    renamed to nirx_delete_channels.m to reflect channel
+%                    based data deletion (e.g., if one optode bad, SD pairs
+%                    with it should be deleted)
 
 if nargin > 3
     correct_opt=1;
@@ -39,7 +41,9 @@ orig_SDpairs = hdr.SDpairs;
 fullmask = ones(hdr.sources,hdr.detectors);
 ind = find(fullmask);
 [Sfull,Dfull] = ind2sub(size(fullmask),ind);
-chans = [Sfull Dfull];
+SDpairs = [Sfull Dfull];
+badpairs = hdr.SDpairs(bad,:);
+badind = find(ismember(SDpairs,badpairs,'rows'));
 
 % must take S and D vectors to delete all combos with them
 % first find their original raw data indices in data from S D indices

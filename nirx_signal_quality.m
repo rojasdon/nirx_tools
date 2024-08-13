@@ -137,7 +137,7 @@ q.nirx_bad = find(q.nirx <= nirx_threshold)'; % called bad by NIRx standards
 q.sci_bad = find(q.sci < sci_threshold)';
 q.ai_bad = find(q.powi.powi < ai_threshold)';
 q.cv_bad = find(q.cv > cv_threshold)';
-bad = eval(['q.' method '_bad']);
+bad = eval(strcat('q.',method,'_bad'));
 if ~isempty(bad)
     fprintf('The following channels are likely bad using %s criteria and threshold = %.1f:\n',...
         method,threshold);

@@ -1,9 +1,10 @@
-1. Optical density conversion
-2. Test GLM with short channels - examine betas
-3. Clean up main scripts and add some comments in front
-4. Make help on functions consistent
-5. Move non-working/tested functions to new directory
-6. Add documentation on main functionality
-7. Add example dataset and functions to analyze it through first level
-8. Robust regression option
-9. AR-IRLS approach. Somewhat done. But, need to do all orders, filter regressions, then select best model order via BIC criterion. 
+1. Add example dataset and functions to analyze it through first level
+2. Robust regression option
+3. AR-IRLS approach. Somewhat done. But, need to do all orders, filter regressions, then select best model order via BIC criterion.
+4. Redo nirx_write_* functions for compatibility with nirx_read_hdr
+5. Delete channels function
+6. Finish dataViewer
+7. general plot channel sticks options in plot functions
+8. Redo all examples to work with revised functions
+9. Fix nirx_motion_spline.m - scaling issue with corrected portions, integrate with dataViewer
+10. Remove redundant code _optpos vs. _chanpos, etc.
