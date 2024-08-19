@@ -17,9 +17,11 @@ function nirx_plotSD_3d(pos,sources,varargin)
 setlights = 0;
 plotchan = 0;
 plotlabels = 0;
-Srad = 5; % sphere radius
-Crad = 2; % cylinder radius
+offset = 10; % mm offset normal to surface to avoid optode/channel intersection when plotting over brain/scalp
+Srad = 5; % sphere radius mm
+Crad = 2; % cylinder radius mm
 N = 20; % elements in sphere and cylinder
+fc = [0 1 0]; % green is default color for channels
 
 % sort option/arg pairs
 if ~isempty(varargin)
@@ -29,10 +31,8 @@ if ~isempty(varargin)
     else
         for option=1:2:optargin
             switch lower(varargin{option})
-                case 'facealpha'
-                    fa = varargin{option+1};
-                case 'edgecolor'
-                    ec = varargin{option+1};
+                case 'surface'
+                    S = varargin{option+1};
                 case 'facecolor'
                     fc = varargin{option+1};
                 case 'radius'
@@ -66,12 +66,34 @@ if ~isempty(varargin)
     detectors = setdiff(1:n_opt,sources);
     type = zeros(1,n_opt);
     type(sources) = 1;
+    if plotchan
+        fc = repmat(fc,size(SDpairs,1),1);
+    end
 
     % axis handle
     if ~isgraphics(ax,'Axes') % axis handle not supplied
         ax = gca;
     end
     hold(ax,'on');
+
+    % offset optodes if requested
+    if exist('S','var')
+        for opt=1:n_opt
+            % find minimum distance from optode position to surface point
+            point = pos(opt,:);
+            [~,ind] = min(sqrt((S.coords(:,1) - point(1)).^2 + (S.coords(:,2) - point(2)).^2 + (S.coords(:,3) - point(3)).^2));
+            % choose that surface point
+            point = S.coords(ind,:);
+            n = S.normals(ind,:);
+            % project the point slightly away from surface
+            point(1) = point(1) + offset * -n(1);
+            point(2) = point(2) + offset * -n(2);
+            point(3) = point(3) + offset * -n(3);
+            pos(opt,:) = point;
+        end
+    else
+        offset = 0;
+    end
     
     % create spheres for optodes
     for opt=1:n_opt
@@ -104,12 +126,15 @@ if ~isempty(varargin)
         % plot channels
         for chn=1:nchan
             ch(chn)=surf(ax,C(chn).X,C(chn).Y,C(chn).Z);
-            ch(chn).FaceColor = 'g';
+            ch(chn).FaceColor = fc(chn,:);
             ch(chn).EdgeColor = 'none';
             ch(chn).FaceLighting = 'gouraud';
         end
     end
     axis(ax,'image');
+    if plotlabels
+        text(ax,pos(:,1),pos(:,2),pos(:,3)+offset+2,labels,'FontWeight','bold');
+    end
     if setlights
         camlight(ax,'left');
         camlight(ax,'right');

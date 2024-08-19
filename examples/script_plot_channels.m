@@ -17,7 +17,7 @@ cortex = gifti(fullfile(spm_dir,'cortex_20484.surf.gii'));
 braincolor = [200 120 105]./255; % pinker looking brain
 
 % channel and optode locations
-[hline,lbl,pos] = nirx_read_optpos('..\new_optode_positions.csv');
+[hline,lbl,pos] = nirx_read_optpos('optode_positions.csv');
 %[hline,lbl,pos] = nirx_read_optpos('optode_positions.csv');
 chpos = nirx_compute_chanlocs(lbl,pos,hdr.SDpairs,hdr.shortdetindex);
 sind=find(contains(lbl,'S'));
