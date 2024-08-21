@@ -1,5 +1,6 @@
 function [h,XYZoffset] = nirx_plot_optode3d(XYZ,S,N,varargin)
 % PURPOSE: plots 3d circles on a surfaces to represent optodes
+% AUTHOR: Don Rojas
 % REQUIRED INPUTS:
 % XYZ is n x 3 array of locations to plot circles
 % S is n x 3 array surface vertices

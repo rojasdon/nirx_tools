@@ -1,6 +1,6 @@
 function nirx_plotSD_3d(pos,sources,varargin)
-% plots optodes as spheres, with option to plot all channel pairs using 3d
-% cylinders for nice plotting of montages
+% PURPOSE: plots optodes as spheres, with option to plot all channel pairs using 3d
+%          cylinders for nice plotting of montages
 % AUTHOR: Don Rojas
 % INPUT: pos, n_optode by 3 array of coordinates for optodes
 %        sources, 1 x n list of source indices
@@ -12,15 +12,25 @@ function nirx_plotSD_3d(pos,sources,varargin)
 %       scalp. If supplied in structure, S.offset is an override to default
 %       offset = 5 mm, indicating how far to offset optodes from supplied
 %       surface. Optodes are projected away along their surface normal.
+%   'facecolor', fc = face color rgb vector or nchan x 3 array for channel
+%       colors, can be used to plot channel info, stats, etc.
+%   'facealpha', fa = face alpha for channels, useful for stats
+%   'offset', offset = projection along surface normal for sensor, used for
+%       plotting with surfaces so that optodes do not intersect surface
+%       (default = 10 mm, not used unless surface supplied)
+%   'sphere_r', r = radius of optode spheres in mm (default = 4 mm)
+%   'cylinder_r', r = radius of channel cylinders in mm (default = 2 mm)
+%   'axis', ax = handle to existing graphics axis to plot if desired
+%   'lights', state, 1 = on, 0 = off (default). Adds camlights to 3d scene
 
 % defaults
 setlights = 0;
 plotchan = 0;
 plotlabels = 0;
-offset = 10; % mm offset normal to surface to avoid optode/channel intersection when plotting over brain/scalp
-Srad = 5; % sphere radius mm
+offset = 10; % mm offset normal to surface
+Srad = 4; % sphere radius mm
 Crad = 2; % cylinder radius mm
-N = 20; % elements in sphere and cylinder
+N = 20; % number of elements in spheres and cylinders
 fc = [0 1 0]; % green is default color for channels
 
 % sort option/arg pairs
@@ -35,8 +45,10 @@ if ~isempty(varargin)
                     S = varargin{option+1};
                 case 'facecolor'
                     fc = varargin{option+1};
-                case 'radius'
-                    r = varargin{option+1};
+                case 'sphere_r'
+                    Srad = varargin{option+1};
+                case 'cylinder_r'
+                    Crad = varargin{option+1};
                 case 'offset'
                     offset = varargin{option+1};
                 case 'channels'
