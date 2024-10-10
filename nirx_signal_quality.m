@@ -4,6 +4,13 @@ function [q,bad] = nirx_signal_quality(hdr,data,varargin)
 % INPUT:
 %   hdr = header structure, from nirx_read_hdr.m
 %   data = raw intensity data, from nirx_read_wl.m
+% OPTIONAL (arg pairs):
+%   method = method to report on bad channels in command window output.
+%       Does not affect q structure
+%   threshold = threshold for bad channels, affects method chosen
+%   window = [min max], in seconds, window to compute measures on. Must be
+%       less than or equal to maximum time (default). Does not affect NIRx
+%       measure, which is taken from calibration sample.
 % OUTPUT:
 %   q, a structure containing the following components:
 %   q.quality = quality metric, comparable to the color coding in NIRStar
@@ -34,6 +41,8 @@ function [q,bad] = nirx_signal_quality(hdr,data,varargin)
 % 04/20/2024 - incorporated SCI, autocorr spectrum and Cui methods
 % 08/11/2024 - optional input to determine method for calling channels bad
 %              for output
+% 10/10/2024 - optional input to compute metrics on specific time window in
+%              data, enter in units of seconds [first last]
 
 % defaults
 method = 'NIRX'; % SCI, AI, or CV also valid
@@ -41,6 +50,9 @@ nirx_threshold = 1;
 sci_threshold = .8;
 ai_threshold = .1;
 cv_threshold = 7.5;
+nsamp = size(data,2);
+time = [0:nsamp-1]*(1/hdr.sr);
+timewin = [time(1) time(end)]; % default to analyze entire sample
 
 % check/process input arguments
 if ~isempty(varargin)
@@ -54,6 +66,11 @@ if ~isempty(varargin)
                     method = varargin{i+1};
                 case 'threshold'
                     threshold = varargin{i+1};
+                case 'window'
+                    tmp = varargin{i+1};
+                    [~, t0] = min(abs(time - tmp(1)));
+                    [~, t1] = min(abs(time - tmp(2)));
+                    timewin = [t0 t1];
                 otherwise
                     error('Invalid option!');
             end
