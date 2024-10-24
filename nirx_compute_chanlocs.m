@@ -1,8 +1,8 @@
-function [chpos,chlbl] = nirx_compute_chanlocs(ids,pos,chns,short_indices)
+function [chpos,chlbl] = nirx_compute_chanlocs(lbl,pos,chns,short_indices)
 % PURPOSE: function computes midpoints between two optodes 
 %   as channel locations.
 % INPUTS:
-%   ids = 1 x n string array of generic optode labels, "S1"..."Sn",
+%   lbl = 1 x n string array of generic optode labels, "S1"..."Sn",
 %         "D1"..."Dn", e.g., from nirx_read_optpos.m
 %   pos = n x 3 array of positions
 %   chns = n x 2 array of channel definitions from nirx_read_chconfig.m chn(:,2:3), or
@@ -24,35 +24,15 @@ function [chpos,chlbl] = nirx_compute_chanlocs(ids,pos,chns,short_indices)
 %              channels for all pairs given, plus simple names
 
 % first sort sensors and detectors
-sind = [];
-snum = [];
-ldind = [];
-ldnum = [];
-sdind = [];
-sdnum = [];
-for ii=1:length(ids)
-    if ids{ii}(1)=='S'
-        sind = [sind ii];
-        snum = [snum str2double(ids{ii}(2:end))];
-    elseif ids{ii}(1)=='D'
-        if ~isempty(find(ismember(short_indices,...
-                str2double(ids{ii}(2:end)))))
-            sdind = [sdind ii];
-            sdnum = [sdnum str2double(ids{ii}(2:end))];
-        else
-            ldind = [ldind ii];
-            ldnum = [ldnum str2double(ids{ii}(2:end))];
-        end
-    end
-end
-Spos = pos(sind,:);
-Dpos = pos(ldind,:);
-SDpos = pos(sdind,:);
+sources = find(lbl.contains("S"));
+detectors = find(lbl.contains("D"));
+Spos = pos(sources,:);
+Dpos = pos(detectors,:);
+SDpos = pos(short_indices,:);
 clear pos;
 
 % now find midpoint locations for the long channels
 short_chan_indices = find(ismember(chns(:,2),short_indices));
-chns(short_chan_indices,:) = [];
 nchan = length(chns);
 longpos = zeros(nchan,3);
 for ii = 1:nchan

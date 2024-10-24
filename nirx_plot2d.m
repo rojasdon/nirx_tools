@@ -11,8 +11,8 @@ function hnd = nirx_plot2d(data,coords,varargin)
 %            name of channel
 % OUTPUT:    handle to figure
 % EXAMPLES:  fig = nirx_plot2d(data,coords,'locs','on') will produce a flatmap projection of
-%           the topography of the data with the channel coordinates marked on the
-%           plot
+%               the topography of the data with the channel coordinates marked on the
+%               plot
 % SEE ALSO:  
 
 % HISTORY:   12/02/2017 - Adapted from similar function in megtools toolbox
@@ -25,6 +25,7 @@ labelson = 0;
 cbar   = 0;
 mark   = 0;
 epoch  = 0;
+offset = .1;
 if ~isempty(varargin)
     optargin = size(varargin,2);
     if (mod(optargin,2) ~= 0)
@@ -57,6 +58,12 @@ if ~isempty(varargin)
     end
 end
 
+% sort sources from detectors
+if labelson
+    sources = find(labels.contains("S"));
+    detectors = find(labels.contains("D"));
+end
+
 if size(coords,2) == 3
     % do projection of 3D positions into 2D map
     loc2d      = double(thetaphi(coords')); %flatten
@@ -83,22 +90,26 @@ end
 if ~isempty(data)
     contourf(x,y,Z,20);
 end
-h = figure('Color','w');
+hnd = figure('Color','w');
 hold on;
 if labelson
     for ii=1:length(loc2d)
-        text(loc2d(2,ii),loc2d(1,ii),labels(ii),'FontSize',8);
+        % text(loc2d(2,ii)+offset,loc2d(1,ii),labels(ii),'FontSize',8);
     end
 end
 if locs
-    plot(loc2d(2,:),loc2d(1,:),'.k');
+    if labelson
+        scatter(loc2d(2,sources),loc2d(1,sources),'red');
+        scatter(loc2d(2,detectors),loc2d(1,detectors),'blue');
+    else
+        plot(loc2d(2,:),loc2d(1,:),'.k');
+    end
 end
 if cbar
     bar = colorbar();
     set(get(bar, 'Title'), 'String', 'T');
 end
-if mark
-    cinds = meg_channel_indices(MEG,'labels',marked);
+if mark % not currently working
     plot(loc2d(2,cinds),loc2d(1,cinds),'.m');
 end
 hold off;
