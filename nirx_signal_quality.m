@@ -1,9 +1,10 @@
-function [q,bad] = nirx_signal_quality(hdr,data,varargin)
-% PURPOSE: output of various metrics used to evaluate signal quality
+function q = nirx_signal_quality(hdr,data,varargin)
+% PURPOSE: NIRx signal quality metric, same as calculated at calibration,
+%          but on specified data input to function
 % AUTHOR: Don Rojas, Ph.D.
 % INPUT:
 %   hdr = header structure, from nirx_read_hdr.m
-%   data = raw intensity data, from nirx_read_wl.m
+%   data = raw data, from nirx_read_wl.m
 % OPTIONAL (arg pairs):
 %   method = method to report on bad channels in command window output.
 %       Does not affect q structure
@@ -17,15 +18,8 @@ function [q,bad] = nirx_signal_quality(hdr,data,varargin)
 %             14.3 (see manual, section 8.1). Incorporates all other
 %             measures except Dark Noise. 0 = lost, 1 = Critical, 2 =
 %             acceptable, 3 = excellent
-%   q.level = average signal levels per wavelength and channel
-%   q.gain = channel gains
-%   q.noise = coefficient of variation on q.level per channel and wl. CV
-%   suggested threshold is > 7.5% = bad
-%   q.dn = dark noise, measured on detectors
-%   q.sci = scalp coupling index
-%   q.powi = structure containing PHOEBE power indices
-%   q.autopower = power spectral peak of autocorrelation data
-%   bad = list of bad channels, but with no details, derived from q.quality
+%   q.nirx = min(q.quality) for each channel (i.e., worst wavelength)
+%   q.bad = list of bad channels, but with no details, derived from q.quality
 % SEE ALSO: NIRStar manual section 8.1 and Table 2 for interpretations
 
 % see also: https://opg.optica.org/abstract.cfm?URI=BRAIN-2020-BM2C.5 and
@@ -46,10 +40,7 @@ function [q,bad] = nirx_signal_quality(hdr,data,varargin)
 
 % defaults
 method = 'NIRX'; % SCI, AI, or CV also valid
-nirx_threshold = 1;
-sci_threshold = .8;
-ai_threshold = .1;
-cv_threshold = 7.5;
+threshold = 1;
 nsamp = size(data,2);
 time = [0:nsamp-1]*(1/hdr.sr);
 timewin = [time(1) time(end)]; % default to analyze entire sample
@@ -76,16 +67,6 @@ if ~isempty(varargin)
             end
         end
     end
-end
-switch method
-    case "NIRx"
-        nirx_threshold = threshold;
-    case "SCI"
-        sci_threshold = threshold;
-    case "AI"
-        ai_threshold = threshold;
-    case "CV"
-        cv_threshold = threshold;
 end
 
 % calculate level and noise measures
@@ -134,33 +115,12 @@ for wl = 1:length(hdr.wl)
     end
 end
 
-% lowest of 3 quality measures is the metric per channel
+% lowest of 3 quality indicators is the metric per channel
 q.quality = zeros(length(wl),hdr.nchan);
 for wl = 1:length(hdr.wl)
     for chn = 1:hdr.nchan
         q.quality(wl,chn) = min(quality{wl,chn});
     end
 end
-q.nirx = min(q.quality); % lower wl quality is the nirx metric
-
-% SCI and power index
-[~, q.sci, q.powi,~, ~] = nirx_sci(hdr,data);
-
-% find/report questionable channels
-q.shortchans = hdr.shortSDindices;
-q.longchans = hdr.longSDindices;
-q.SDpairs = hdr.SDpairs;
-q.nirx_bad = find(q.nirx <= nirx_threshold)'; % called bad by NIRx standards
-q.sci_bad = find(q.sci < sci_threshold)';
-q.ai_bad = find(q.powi.powi < ai_threshold)';
-q.cv_bad = find(q.cv > cv_threshold)';
-bad = eval(strcat('q.',lower(method),'_bad'));
-if ~isempty(bad)
-    fprintf('The following channels are likely bad using %s criteria and threshold = %.1f:\n',...
-        method,eval(strcat(lower(method),'_threshold')));
-    for ii=1:length(bad)
-        fprintf('Channel: %d\n',bad(ii));
-    end
-else
-    fprintf('All channels pass quality metrics.\n');
-end
+q.nirx = min(q.quality); % lower wl quality is the overall nirx metric
+q.bad = find(q.nirx <= threshold)'; % called bad by NIRx standards
