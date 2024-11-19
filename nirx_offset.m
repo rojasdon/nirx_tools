@@ -9,21 +9,32 @@
 %                data structure
 %   10/30/2024 - revision to further conform to row/column order for raw
 %                data
-% TODO: extend to allow corrections on non-raw type data of one or two
-%       dimensions
+%   11/19/2024 - revised to allow 2-dimensional or 3-dimensional data
+%                (default)
+% TODO: extend to allow corrections on one dimensional data as well
 function odata = nirx_offset(data)
 
 % dimensions
 s = size(data);
 if numel(s) < 3
-    error('Wrong input dimensions for data. Must = 3!');
+    nwl = 1;
+    nchn = s(2);
+    npnts = s(1);
+    tmp(nwl,:,:) = data; % make it 3-dimensional
+    data = tmp;
+    clear tmp;
+else
+    nchn  = s(3);
+    npnts = s(2);
+    nwl = s(1);
 end
-nchn  = s(3);
-npnts = s(2);
-nwl = s(1);
 odata = zeros(nwl,npnts,nchn);
 % remove mean
 for wl = 1:nwl
     mdata = mean(data(wl,:,:));
     odata(wl,:,:) = data(wl,:,:) - repmat(mdata,1,npnts); % remove mean
+end
+% reformat if needed
+if numel(s) < 3
+    odata = squeeze(odata);
 end
