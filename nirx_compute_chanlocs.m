@@ -17,11 +17,11 @@ function [chpos,chlbl] = nirx_compute_chanlocs(lbl,pos,chns,short_indices)
 %       the S-D distance that is relevant to light paths, not the surface
 %       distance.
 % HISTORY:
-% 03/01/2022 - fixed short indexing bug, returns short channel positions
-%   separately from longpos
-% 07/25/2024 - minor modification to increase calculation efficiency
-% 08/11/2024 - rewritten for more general usage. E.g., returns all
-%              channels for all pairs given, plus simple names
+%   03/01/2022 - fixed short indexing bug, returns short channel positions
+%                separately from longpos
+%   07/25/2024 - minor modification to increase calculation efficiency
+%   08/11/2024 - rewritten for more general usage. E.g., returns all
+%                channels for all pairs given, plus simple names
 
 % first sort sensors and detectors
 sources = find(lbl.contains("S"));
