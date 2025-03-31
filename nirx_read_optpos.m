@@ -9,11 +9,12 @@ function [first, ids, pos] = nirx_read_optpos(file)
 % HISTORY:
 %   08/06/2024 - revised ids return to string array, renamed from chpos to
 %                optpos for clarity since no channels are returned
+%   03/31/2025 - minor code cleanup
 
-    fp = fopen(file);
-    first = fgetl(fp);
-    pos = [];
-    ii = 1;
+fp = fopen(file);
+first = fgetl(fp);
+pos = [];
+ii = 1;
     while ~feof(fp)
         tmp = fgetl(fp);
         C = textscan(tmp,'%s %f %f %f','delimiter',',');
@@ -21,5 +22,4 @@ function [first, ids, pos] = nirx_read_optpos(file)
         pos(ii,:) = [C{2} C{3} C{4}];
         ii = ii + 1;
     end
-    fclose(fp);
-end
+fclose(fp);

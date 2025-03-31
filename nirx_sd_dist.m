@@ -6,7 +6,6 @@ function [sd_pairs,sd_dist] = nirx_sd_dist(hdr,pos,labels,selection)
 %   labels = optode labels from nirx_read_optpos
 %   selection = 'all' for all possible chans, or 'mask' for those in mask
 %   order = 'source', or 'detector', for ordering output
-
 % OUTPUTS:
 %   sd_pairs = nchan x 2 array of source detector pairs
 %   sd_dist = channel distances, nchan x 1
