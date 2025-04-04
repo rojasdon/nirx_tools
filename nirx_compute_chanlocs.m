@@ -22,6 +22,7 @@ function [chpos,chlbl] = nirx_compute_chanlocs(lbl,pos,chns,short_indices)
 %   07/25/2024 - minor modification to increase calculation efficiency
 %   08/11/2024 - rewritten for more general usage. E.g., returns all
 %                channels for all pairs given, plus simple names
+%   04/03/2025 - bugfixes to implement last history change correctly
 
 % first sort sensors and detectors
 sources = find(lbl.contains("S"));
@@ -31,24 +32,25 @@ Dpos = pos(detectors,:);
 SDpos = pos(short_indices,:);
 clear pos;
 
-% now find midpoint locations for the long channels
+% now find midpoint locations for the channels
 short_chan_indices = find(ismember(chns(:,2),short_indices));
-nchan = length(chns);
-longpos = zeros(nchan,3);
+nchan = size(chns,1);
+long_chan_indices = setdiff(1:nchan,short_chan_indices);
+nshort = length(short_chan_indices);
+chpos = zeros(nchan,3);
+sdind = 1;
+ldind = 1;
 for ii = 1:nchan
-    if ismember(sdnum,chns(ii,2))
-        break;
+    if ismember(ii,short_chan_indices)
+        chpos(ii,:) = SDpos(sdind,:);
+        chlbl(ii) = "S"+string(sdind);
+        sdind = sdind + 1;
     else
         chpair = chns(ii,:);
-        source_ind = find(ismember(snum,chpair(1)));
-        det_ind = find(ismember(ldnum,chpair(2)));
-        Sloc = Spos(source_ind,:);
-        Dloc = Dpos(det_ind,:);
-        longpos(ii,:) = (Sloc + Dloc)./2;
+        Sloc = Spos(chpair(1),:);
+        Dloc = Dpos(chpair(2),:);
+        chpos(ii,:) = (Sloc + Dloc)./2;
+        chlbl(ii) = "L"+string(ldind);
+        ldind = ldind + 1;
     end
 end
-% short channels
-shortpos = SDpos; % just use the detector locations since co-located on detectors
-% all channels
-chpos = [longpos;shortpos];
-chlbl = [repmat("L",1,length(longpos))+string(1:length(longpos)) repmat("S",1,length(shortpos))+string(1:length(shortpos))]';
