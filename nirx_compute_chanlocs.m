@@ -1,4 +1,4 @@
-function [chpos,chlbl] = nirx_compute_chanlocs(lbl,pos,chns,short_indices)
+function [chpos,chlbl] = nirx_compute_chanlocs(lbl,pos,chns)
 % PURPOSE: function computes midpoints between two optodes 
 %   as channel locations.
 % INPUTS:
@@ -7,8 +7,6 @@ function [chpos,chlbl] = nirx_compute_chanlocs(lbl,pos,chns,short_indices)
 %   pos = n x 3 array of positions, from nirx_read_optpos.m
 %   chns = n x 2 array of channel definitions from nirx_read_chconfig.m chn(:,2:3), or
 %          from nirx_read_hdr.m .SDpairs
-%   short_indices = 1 x n array of short detector indices from
-%                   nirx_read_hdr.m = hdr.shortSDindices
 % OUTPUTS:
 %   chpos = 3d channel positions
 %   chlbl = 3d channel labels "L1"..."Ln" for long, "S1" to "Sn" for short
@@ -24,34 +22,24 @@ function [chpos,chlbl] = nirx_compute_chanlocs(lbl,pos,chns,short_indices)
 %                channels for all pairs given, plus simple names
 %   04/10/2025 - revision to better integrate with nirx_read_header.m and
 %                nirx_compute_chanlocs.m
+%   04/11/2025 - bugfix to short channel locations, removed need for short
+%                indices as inputs
 
 % first sort sensors and detectors
 sources = find(lbl.contains("S"));
 detectors = find(lbl.contains("D"));
 Spos = pos(sources,:);
 Dpos = pos(detectors,:);
-SDpos = pos(short_indices,:);
 
 % now find midpoint locations for the long channels
 nchan = length(chns);
-longpos = zeros(nchan,3) - length(short_indices);
+chpos = zeros(nchan,3);
 for ii = 1:nchan
-    if ismember(short_indices,chns(ii,2))
-        continue;
-    else
-        chpair = chns(ii,:);
-        source_ind = find(ismember(1:length(sources),chpair(1)));
-        det_ind = find(ismember(1:length(detectors),chpair(2)));
-        Sloc = Spos(source_ind,:);
-        Dloc = Dpos(det_ind,:);
-        longpos(ii,:) = (Sloc + Dloc)./2;
-    end
+    chpair = chns(ii,:);
+    source_ind = find(ismember(1:length(sources),chpair(1)));
+    det_ind = find(ismember(1:length(detectors),chpair(2)));
+    Sloc = Spos(source_ind,:);
+    Dloc = Dpos(det_ind,:);
+    chpos(ii,:) = (Sloc + Dloc)./2;
+    chlbl(ii) = ii;
 end
-% NOTE: short channel locations need computation offset of 8 mm from source
-% location. So, probably feed hdr.shortSDpairs to function to get source
-% locs, then do 8 mm offset in some direction prob +x (to right).
-
-shortpos = SDpos; % just use the detector locations since co-located on detectors
-% all channels
-chpos = [longpos;shortpos];
-chlbl = [repmat("L",1,length(longpos))+string(1:length(longpos)) repmat("S",1,length(shortpos))+string(1:length(shortpos))]';
