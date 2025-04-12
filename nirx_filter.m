@@ -81,7 +81,7 @@ switch type
         if length(cutoffs) ~= 2
             error('For band pass, enter two frequency cutoffs');
         else
-            [B, A] = butter(order, [cutoffs(1) cutoffs(2)]/(sr/2));   
+            [B, A] = butter(order, [cutoffs(1) cutoffs(2)]/(sr/2),'bandpass');   
         end
     case 'moving'
         % moving average filter
