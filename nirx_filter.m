@@ -1,4 +1,4 @@
-function fdata = nirx_filter(data,hdr,type,cutoffs,varargin)
+function fdata = nirx_filter(data,hdr,varargin)
 % NAME:      nirx_filter.m
 % AUTHOR:    Don Rojas, Ph.D.
 % PURPOSE:   a basic filtering function for fnirs timeseries
@@ -11,15 +11,16 @@ function fdata = nirx_filter(data,hdr,type,cutoffs,varargin)
 %            high and moving filter types. For moving filter, the number is
 %            indicates the number of seconds of data averaged
 %            type = filter type ('low','high', 'moving' or 'band')
-%            coeff = filter coefficients [B,A], if supplied cutoffs and
-%            type ignored
+%            coeff = filter coefficients [B;A], if supplied cutoffs and
+%            type ignored (see butter.m for help on B and A)
 % OPTIONAL:  'order', filter order 3 = default, if type = 'moving', then
 %             order is ignored
 % OUTPUTS:   fdata = filtered version of data
-% USAGE: (1) fhbo = nirx_filter(hbo,hdr,'low',.4,'order',4);
+% USAGE: (1) fraw = nirx_filter(raw,hdr,'type','band','cutoffs',[.05 .1],'order',3)
+%            fraw = nirx_filter(raw,hdr,'coeffs',[B;A]);
 % NOTES: (1) be careful applying this to data uncritically. If bad results
 %            are obtained, can evaluate B,A transfer coefficients using freqs(B,A);
-% SEE ALSO: nirx_read_wl.m, nirx_read_hdr.m
+% SEE ALSO: nirx_read_wl.m, nirx_read_hdr.m, butter.m
 
 % HISTORY: 07/13/16 - first version, based on megcode filterer.m function
 %          03/03/22 - updated to take data more generically, rather than
@@ -47,7 +48,7 @@ else
             for option=1:2:optargin
                 switch upper(varargin{option})
                     case 'TYPE'
-                        cutoffs = varargin{option+1};
+                        type = varargin{option+1};
                     case 'CUTOFFS'
                         cutoffs = varargin{option+1};
                     case 'ORDER'
@@ -71,8 +72,8 @@ npnts   = size(data,2);
 
 % apply coefficients if supplied, or calculate them if not
 if ~isempty(coeffs)
-    B = coeffs(1);
-    A = coeffs(2);
+    B = coeffs(1,:);
+    A = coeffs(2,:);
 else
     % create appropriate butterworth filter coefficients
     switch type
