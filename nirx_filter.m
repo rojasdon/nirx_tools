@@ -5,7 +5,7 @@ function fdata = nirx_filter(data,hdr,varargin)
 %            that will provide bandpass filtering of
 %            the butterworth type IIR in forward/reverse fashion for zero
 %            phase-shift.
-% INPUTS:    data = N channel x N timepoint waveforms, e.g., from nirx_read_wl.m
+% INPUTS:    data = N wl N timepoint x N channel waveforms, e.g., from nirx_read_wl.m
 %            hdr = header from nirx_read_hdr.m
 % OPTIONAL:  cutoffs = [lowcut highcut] in Hz, or single number for low,
 %            high and moving filter types. For moving filter, the number is
@@ -29,6 +29,7 @@ function fdata = nirx_filter(data,hdr,varargin)
 %          04/14/25 - added option to feed filter coefficients (b,a)
 %                     directly to function, bypassing calculation within
 %                     function (useful for gui fnirs_filter interface
+%          04/18/25 - bugfix to proper dimensions of input data
 
 % FIXME: check for installation of signal processing toolbox here
 
@@ -67,8 +68,10 @@ end
 
 % basic signal info
 sr      = hdr.sr;
-nchn    = size(data,1);
-npnts   = size(data,2);
+sz      = size(data);
+nchn    = sz(3);
+npnts   = sz(2);
+nwl     = sz(1);
 
 % apply coefficients if supplied, or calculate them if not
 if ~isempty(coeffs)
@@ -119,9 +122,13 @@ A = double(A);
 % apply filter to data
 fdata = zeros(size(data));
 fprintf('\nFiltering channel');
-for chn = 1:nchn
-    fprintf('\nFiltering channel: %d', chn);
-    % forward and reverse filter for zero phase-shift
-    fdata(chn,:) = filtfilt(B, A, double(data(chn,:)));
+for wl = 1:nwl
+    fprintf('\nFiltering wavelength or concentration: %d', wl);
+    waves = squeeze(data(wl,:,:));
+    for chn = 1:nchn
+        fprintf('\nFiltering channel: %d', chn);
+        % forward and reverse filter for zero phase-shift
+        fdata(wl,:,chn) = filtfilt(B, A, double(waves(:,chn)));
+    end
 end
 fprintf('\ndone!\n');
