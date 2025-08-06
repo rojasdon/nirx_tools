@@ -21,7 +21,9 @@ function stat = multregr(X,y,varargin)
 %               vector, where n + 1 = size(X,2). Generally, weights should sum to
 %               zero. These contrasts are Wald tests between regressors.
 %               For other contrasts, create dummy coded columns in X
-% Outputs:  1) stat.beta = estimates of beta and intercept
+% Outputs:  1) stat.beta = estimates of beta and intercept, can be
+%                          standardized or not, a.k.a. regression
+%                          coefficients
 %           2) stat.r2 is r-squared
 %           3) stat.SEb = standard errors
 %           4) stat.AIC = Akaike Information Criterion
@@ -36,6 +38,10 @@ function stat = multregr(X,y,varargin)
 %                        structure instead of multiple outputs
 %           07/12/2022 - added Akaike and Bayesian Information Criteria
 %                        output to stat structure
+
+% TODO: 1) run twice, with standardized and non-standardized predictor and
+% y. Report coeffs in both ways, and put predicted output from
+% unstandardized into stat. This will be predicted HRF for fNIRS
 
 % defaults
 is_contrast = false;
@@ -94,7 +100,8 @@ pvals = pvals'; % just to make it consistent with other col vectors
 
 % output structure
 stat = [];
-stat.beta = b;
+stat.b = b; % raw regression coefficients
+%stat.beta = ; % beta = b (sd(y)/sd(x)) to standardize
 stat.r2 = r2;
 stat.F = F;
 stat.tvals = tvals;

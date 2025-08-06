@@ -19,7 +19,7 @@
 %       This is intended to add confounds such as local or global short channel/scalp
 %       estimates, or motion, but could also be used for added variables of
 %       interest. If added, X.names should be combined length of all
-%       columns.
+%       columns. Scale these from 0-1
 % OUTPUTS:
 %   X.X, new added field X is design matrix
 % HISTORY:
@@ -99,4 +99,5 @@ if visuals
     xlabel('Conditions');
     xticks(1:length(X.names));
     xticklabels(X.names);
+    colormap gray;
 end

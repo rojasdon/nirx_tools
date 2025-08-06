@@ -6,6 +6,7 @@
 %           of near-infrared spectroscopy concentration calculations for 
 %           focal changes in oxygenation parameters Neuroimage, 4, 865-879.
 % HISTORY:  07/08/2022 - first created
+%           08/06/2025 - bugfix for negative intensities
 % SEE ALSO: nirx_DPF, nirx_ecoeff, nirx_MBLL
 function od = nirx_OD(raw)
 
@@ -17,5 +18,5 @@ od = zeros(nwl,npoints,nchan);
 for wl = 1:nwl
     tmp = squeeze(raw(wl,:,:));
     m = repmat(mean(tmp),npoints,1);
-    od(wl,:,:) = -log(tmp./m);
+    od(wl,:,:) = real(-log(tmp./m));
 end

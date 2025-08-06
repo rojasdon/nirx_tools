@@ -6,7 +6,7 @@
 %           onsets, vector of onsets in samples from nirx_read_evt
 %           vals, vector of values from nirx_read_evt
 %           type, integer type of condition to average
-
+% HISTORY: 08/06/2025 - bugfix to time output
 function [av,t] = nirx_averager(hdr,od,win,onsets,vals,type)
 
 % units and time
@@ -15,7 +15,7 @@ pstim = abs(win(1));
 t0 = abs(win(1));
 t1 = abs(win(2));
 t0 = round(t0/int); % in samples
-t1  = round(t0/int);
+t1  = round(t1/int);
 ep_samples = abs(t0)+abs(t1);
 t = (1:double(ep_samples))*int;
 t = (t -(abs(pstim)));
