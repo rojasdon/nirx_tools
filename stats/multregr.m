@@ -32,6 +32,7 @@ function stat = multregr(X,y,varargin)
 %           7) stat.pvals is significance value, two-tailed
 %           8) stat.resid is residuals
 %           9) stat.contrast contains tvals and pvals for contrast input
+%          10) stat.ypred = y-hat, predicted values of y from regression
 %           
 % History:  12/13/2018 - first working version
 %           04/02/2022 - added contrast input/output, changing output to a
@@ -39,9 +40,7 @@ function stat = multregr(X,y,varargin)
 %           07/12/2022 - added Akaike and Bayesian Information Criteria
 %                        output to stat structure
 
-% TODO: 1) run twice, with standardized and non-standardized predictor and
-% y. Report coeffs in both ways, and put predicted output from
-% unstandardized into stat. This will be predicted HRF for fNIRS
+% TODO: 1) run twice, with standardized and non-standardized predictors/y
 
 % defaults
 is_contrast = false;
@@ -114,7 +113,8 @@ stat.resid = e;
 
 % contrasts, if any, and their associated stats. These are Wald statistics.
 % Wald follows F or X^2 distribution. F stat = T^2. Student T statistic is
-% related to Wald W and F as follows: T^2 = W = F.
+% related to Wald W and F as follows: T^2 = W = F. See: https://cran.r-project.org/web/packages/clubSandwich/vignettes...
+%   /Wald-tests-in-clubSandwich.html
 if is_contrast
     for ii = 1:size(conmat,1)
         con_est = conmat(ii,:)*stat.beta;
