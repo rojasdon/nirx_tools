@@ -1,9 +1,12 @@
+% PURPOSE: Compute Gamma distribution PDF without Statistics Toolbox
+% INPUTS:   x     - input values (scalar or vector)
+%           k     - shape parameter (k > 0)
+%           theta - scale parameter (theta > 0)
+% OUTPUTS:  y     - gamma pdf
+% CITATION: Johnson et al. (1994). Continuous Univariate Distributions,
+%           Vol 1 (2nd ed.). Wiley Press
 function y = gampdf_custom(x, k, theta)
-    % gampdf_custom: Compute Gamma distribution PDF without Statistics Toolbox
-    % x     - input values (scalar or vector)
-    % k     - shape parameter (k > 0)
-    % theta - scale parameter (theta > 0)
-    
+    % check validity of input
     if any(x < 0)
         error('x must be non-negative');
     end

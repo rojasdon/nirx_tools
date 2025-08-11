@@ -52,10 +52,7 @@ for ii=1:ncond
 end
 
 % task vectors and convolution with hrf
-% xBF.dt = X.dt;
-% xBF.name = X.basis; % 'hrf' for now
-% xBF = spm_get_bf(xBF);
-xBF = spm_hrf(X.dt);
+xBF = nirx_hrf(X.dt);
 vec = zeros(ncond,X.nsamp);
 vechrf = vec;
 for cond = 1:ncond
