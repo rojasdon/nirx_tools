@@ -32,7 +32,7 @@ function stat = multregr(X,y,varargin)
 %           7) stat.pvals is significance value, two-tailed
 %           8) stat.resid is residuals
 %           9) stat.contrast contains tvals and pvals for contrast input
-%          10) stat.ypred = y-hat, predicted values of y from regression
+%          10) stat.yhat = y-hat, predicted values of y from regression
 %           
 % History:  12/13/2018 - first working version
 %           04/02/2022 - added contrast input/output, changing output to a
@@ -99,7 +99,7 @@ pvals = pvals'; % just to make it consistent with other col vectors
 
 % output structure
 stat = [];
-stat.b = b; % raw regression coefficients
+stat.beta = b; % raw regression coefficients
 %stat.beta = ; % beta = b (sd(y)/sd(x)) to standardize
 stat.r2 = r2;
 stat.F = F;
@@ -110,6 +110,7 @@ stat.AIC = n * log(SSresid/n) + 2 * p; % Akaike, 1969
 stat.BIC = n * log(SSresid/n) + p * log(n); % Schwarz, 1978
 stat.Cov = C;
 stat.resid = e;
+stat.yhat = yhat;
 
 % contrasts, if any, and their associated stats. These are Wald statistics.
 % Wald follows F or X^2 distribution. F stat = T^2. Student T statistic is

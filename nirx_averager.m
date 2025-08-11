@@ -26,12 +26,12 @@ onsets = onsets(vals == type);
 % extract epochs
 epochs     = zeros(length(onsets),size(od,1),ep_samples);
 skipped    = [];
-fprintf('\nExtracting epochs');
+fprintf('\nExtracting epochs\n');
 for ii=1:length(onsets)
     if onsets(ii)-t0 == abs(onsets(ii)-t0) && ...
             onsets(ii)+t1-1 < size(od,2) && ...
             onsets(ii)-t0 > 0
-        fprintf('\nEpoch: %d',ii);
+        fprintf('Epoch: %d\n',ii);
         epochs(ii,:,:) = od(:,onsets(ii)-t0:onsets(ii)+t1-1);
     else
         skipped = [skipped ii];
