@@ -1,13 +1,10 @@
-function data_corr = nirx_motion_spline(data, t, sdWindow, p_spline)
-% Purpose:  Applies spline-based motion correction and Savitsky-Golay smoothing
+function data_corr = nirx_motionCorrectSpline(data, t, sdWindow, p_spline)
+% Purpose:  Applies Scholkmann spline-based motion correction and Savitsky-Golay smoothing
 %           on local segments identified as motion artifact
-% Citation: 1. Jahani et al. (2018), "Motion artifact detection and
+% Citation: Jahani et al. (2018), "Motion artifact detection and
 %           correction in functional near-infrared spectroscopy: a new hybrid method 
 %           based on spline interpolation method and Savitzky–Golay filtering," Neurophoton. 5(1), 
 %           015003.
-%           2. Scholkmann, et al. (2010). How to detect and reduce movement artifacts in near-infrared 
-%           imaging using moving standard deviation and spline interpolation. 
-%           Physiological measurement, 31(5), 649.
 % Author:   Don Rojas, Ph.D. (coding help from ChatGPT 5 for problem with
 %           SG Frame and Order problem with small artifact segments)
 % Inputs:
@@ -17,13 +14,14 @@ function data_corr = nirx_motion_spline(data, t, sdWindow, p_spline)
 %           sdThresh    - threshold (e.g. multiples of baseline SD) for detecting
 %                         motion (default = 2)
 %           p_spline    - smoothing parameter: 1 = natural cubic spline, 0
-%                       = linear (.99 suggested by Scholkmann et al.)
-% Output:   data_corr   - corrected signal vector
-% History:  08/13/2025 First working version
+%           = linear 
+% History: 08/13/2025 First working version
 % Notes:    1. This function will alter spectrotemporal properties of data,
 %           so likely do not use it with time-frequency methods without care
 %           2. sdWindow > 5 sec can be a problem for beginning and ending
 %           data. Likely can be solved with zeropadding
+% Output:
+%           data_corr   - corrected signal vector
 
 % defaults
 sgOrder = 3; % sg order
@@ -38,6 +36,7 @@ data_corr = data; % start with original data
 % iterate over channels
 for ch = 1:nCh
     x = data(:, ch);
+    fprintf("%d\n",ch);
 
     % motion artifact detection for this channel
     movSD = movstd(x, sdWindow);

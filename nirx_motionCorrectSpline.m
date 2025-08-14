@@ -1,44 +1,108 @@
-function x_corr = motionCorrectSpline(x, t, sdWindow, p_spline)
-% motionCorrectSpline  Applies Scholkmann spline-based motion correction.
-%
+function data_corr = nirx_motionCorrectSpline(data, t, sdWindow, p_spline)
+% Purpose:  Applies Scholkmann spline-based motion correction and Savitsky-Golay smoothing
+%           on local segments identified as motion artifact
+% Citation: 1. Jahani et al. (2018), "Motion artifact detection and
+%           correction in functional near-infrared spectroscopy: a new hybrid method 
+%           based on spline interpolation method and Savitzky–Golay filtering," Neurophoton. 5(1), 
+%           015003.
+%           2. Scholkmann, et al. (2010). How to detect and reduce movement artifacts in near-infrared 
+%           imaging using moving standard deviation and spline interpolation. 
+%           Physiological measurement, 31(5), 649.
+% Author:   Don Rojas, Ph.D. (coding help from ChatGPT 5 for problem with
+%           SG Frame and Order problem with small artifact segments)
 % Inputs:
-%   x          - vector of fNIRS signal (time × 1)
-%   t          - corresponding time vector (same length)
-%   sdWindow   - window size (in samples) for moving STD
-%   sdThresh   - threshold (e.g. multiples of baseline SD) for detecting motion
-%   p_spline   - smoothing parameter: 1 = natural cubic spline, 0 = linear
-%
-% Output:
-%   x_corr     - corrected signal vector
+%           data        - array of fNIRS signal (timepoints × channels)
+%           t           - corresponding time vector (same length)
+%           sdWindow       - window size (in samples) for moving STD
+%           sdThresh    - threshold (e.g. multiples of baseline SD) for detecting
+%                         motion (default = 2)
+%           p_spline    - smoothing parameter: 1 = natural cubic spline, 0
+%                       = linear (.99 suggested by Scholkmann et al.)
+% Output:   data_corr   - corrected signal vector
+% History:  08/13/2025 First working version
+% Notes:    1. This function will alter spectrotemporal properties of data,
+%           so likely do not use it with time-frequency methods without care
+%           2. sdWindow > 5 sec can be a problem for beginning and ending
+%           data. Likely can be solved with zeropadding
 
-n = length(x);
-% Compute moving standard deviation
+% defaults
+sgOrder = 3; % sg order
+[nSamples, nCh] = size(data);
+dt = (t(end)-t(1))/nSamples;
+sgFrame = round(5 * dt); % +/- 5 sec
+if mod(sgFrame,2)==0
+    sgFrame = sgFrame  + 1; % frame must be odd num
+end
+data_corr = data; % start with original data
 
-movSD = movstd(x, sdWindow);
-sdThresh = 2*median(movSD);
+% iterate over channels
+for ch = 1:nCh
+    x = data(:, ch);
 
-% Detect motion artifact indices
-artifact = movSD > sdThresh;
+    % motion artifact detection for this channel
+    movSD = movstd(x, sdWindow);
+    sdThresh = 2*median(movSD);
+    artifact = movSD > sdThresh;
 
-% Expand artifact regions to contiguous segments
-d = diff([0; artifact; 0]);
-startIdx = find(d == 1);
-endIdx   = find(d == -1) - 1;
+    % expand artifact regions
+    d = diff([0; artifact; 0]);
+    startIdx = find(d == 1);
+    endIdx   = find(d == -1) - 1;
 
-x_corr = x;  % initialize corrected signal
+    if isempty(startIdx)
+        % no artifacts detected for this channel
+        continue;
+    end
 
-% Identify normal (artifact-free) segments
-goodIdx = ~artifact;
-t_good = t(goodIdx);
-x_good = x(goodIdx);
+    % Prepare spline model from good data
+    goodIdx = ~artifact;
+    t_good = t(goodIdx);
+    x_good = x(goodIdx);
 
-% Build smoothing spline model using good data
-splineFit = csaps(t_good, x_good, p_spline);
+    splineFit = csaps(t_good, x_good, p_spline);
 
-% Replace artifacted samples with spline interpolation
-for k = 1:numel(startIdx)
-    idx_range = startIdx(k):endIdx(k);
-    x_corr(idx_range) = fnval(splineFit, t(idx_range));
+    % Correct artifacts, piecewise
+    for k = 1:numel(startIdx)
+        idx_range = startIdx(k):endIdx(k);
+
+        % Interpolate with spline
+        x_interp = fnval(splineFit, t(idx_range));
+
+        % Determine local SG frame length
+        localFrame = min(sgFrame, length(idx_range));
+        if mod(localFrame, 2) == 0
+            localFrame = localFrame - 1;
+        end
+        if localFrame <= sgOrder
+            localFrame = sgOrder + 2;
+            if mod(localFrame, 2) == 0
+                localFrame = localFrame + 1;
+            end
+            if localFrame <= length(idx_range)
+                x_interp = sgolayfilt(x_interp, sgOrder, localFrame);
+            end
+        else
+            x_interp = sgolayfilt(x_interp, sgOrder, localFrame);
+        end
+
+        % --- Smooth edge blending ---
+        if startIdx(k) == 1
+            % Blend from first good value after artifact
+            firstGood = x(endIdx(k) + 1);
+            blendLen = length(idx_range);
+            w = linspace(0, 1, blendLen); % 0=neighbor, 1=spline
+            x_interp = (1 - w) * firstGood + w .* x_interp;
+        elseif endIdx(k) == nSamples
+            % Blend into last good value before artifact
+            lastGood = x(startIdx(k) - 1);
+            blendLen = length(idx_range);
+            w = linspace(1, 0, blendLen); % 1=spline, 0=neighbor
+            x_interp = (1 - w) * lastGood + w .* x_interp;
+        end
+
+        % Insert corrected segment
+        data_corr(idx_range, ch) = x_interp;
+    end
 end
 
 end
