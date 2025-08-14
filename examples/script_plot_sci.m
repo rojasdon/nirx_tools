@@ -1,14 +1,17 @@
 % plots optode and channel locations for montage on an MNI standard head
 
-%clear;
+% clear;
 
-filebase = 'NIRS-2024-06-03_002'; % file to plot
+% not great visualization, it plots the channels as if they were sensors.
+% Better to use lines for the channels. See nirx_plotSD_3d.m
+
+filebase = 'NIRS-2024-10-29_002'; % file to plot
 offset = 10;
 
 % read header to get the short channels, if any
 hdr = nirx_read_hdr([filebase '.hdr']);
 [raw, cols, S, D] = nirx_read_wl(filebase,hdr);
-[bad, sci, bpm_lo, bpm_hi] = nirx_signal_quality_sci(hdr,raw);
+[bad, sci, powi, bpm_lo, bpm_hi] = nirx_sci(hdr,raw);
 
 % surfaces from spm
 spm_dir = fullfile(spm('dir'),'canonical');
@@ -20,17 +23,10 @@ braincolor = [200 120 105]./255; % pinker looking brain
 
 % channel and optode locations
 [hline,lbl,pos] = nirx_read_optpos('optode_positions.csv');
-chpairs = nirx_read_chconfig('ch_config.txt');
-[longpos,shortpos] = nirx_compute_chanlocs(lbl,pos,chpairs,hdr.shortdetindex);
-sind = [];
+chpairs = hdr.SDpairs;
+[chpos,chlbl] = nirx_compute_chanlocs(lbl,pos,chpairs);
 sdind = hdr.shortSDindices;
 ldind = hdr.longSDindices;
-for ii=1:length(lbl)
-    if lbl{ii}{1}(1)=='S'
-        sind = [sind ii];
-    end
-end
-dind = setdiff([1:length(pos)],sind);
 
 % plot surfaces
 figure('color','white');
@@ -45,11 +41,6 @@ c = patch('vertices',cortex.vertices,'faces',cortex.faces,'edgecolor','none',...
 camlight left; camlight right;
 lighting gouraud;
 rotate3d on;
-
-% plot channels formed
-for ii=1:length(longpos)
-    chanlabels{ii} = cellstr(num2str(ii));
-end
 
 % colors from sci
 sci_color = [sci(ldind)' zeros(length(chpairs(ldind)),1) zeros(length(chpairs(ldind)),1)];

@@ -8,13 +8,13 @@ function fdata = nirx_filter(data,hdr,varargin)
 % INPUTS:    data = N wl N timepoint x N channel waveforms, e.g., from nirx_read_wl.m
 %            hdr = header from nirx_read_hdr.m
 % OPTIONAL:  cutoffs = [lowcut highcut] in Hz, or single number for low,
-%            high and moving filter types. For moving filter, the number is
-%            indicates the number of seconds of data averaged
+%                    high and moving filter types. For moving filter, the number is
+%                    indicates the number of seconds of data averaged
 %            type = filter type ('low','high', 'moving' or 'band')
 %            coeff = filter coefficients [B;A], if supplied cutoffs and
-%            type ignored (see butter.m for help on B and A)
-% OPTIONAL:  'order', filter order 3 = default, if type = 'moving', then
-%             order is ignored
+%                    type ignored (see butter.m for help on B and A)
+%            order = filter order 3 = default, if type = 'moving', then
+%                    order is ignored
 % OUTPUTS:   fdata = filtered version of data
 % USAGE: (1) fraw = nirx_filter(raw,hdr,'type','band','cutoffs',[.05 .1],'order',3)
 %            fraw = nirx_filter(raw,hdr,'coeffs',[B;A]);

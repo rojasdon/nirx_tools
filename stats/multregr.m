@@ -5,6 +5,8 @@ function stat = multregr(X,y,varargin)
 %           regression and aov package wald.test() function
 %        2. Matlab program regress.m offers more quality checks if you have
 %           the toolbox
+%        3. This is Ordinary Least Squares unless AR(p) is used, then it is
+%           Generalized Least Squares
 % Citations: 1. Inspired by http://philender.com/courses/multivariate/notes/mr3.html
 %            2. Brown, S. (2009). Multiple Linear Regression Analysis: A
 %               Matrix Approach with MATLAB. Alabama Journal of Mathematics.
@@ -21,9 +23,10 @@ function stat = multregr(X,y,varargin)
 %               vector, where n + 1 = size(X,2). Generally, weights should sum to
 %               zero. These contrasts are Wald tests between regressors.
 %               For other contrasts, create dummy coded columns in X
-% Outputs:  1) stat.beta = estimates of beta and intercept, can be
-%                          standardized or not, a.k.a. regression
-%                          coefficients
+%           2) 'AR', p, where p is the order of an AR model to apply
+%               pre-whitening to both X and y
+% Outputs:  1) stat.coeff = coefficients, unstandardized (units of data)
+%           2) stat.beta = coefficients, standardized
 %           2) stat.r2 is r-squared
 %           3) stat.SEb = standard errors
 %           4) stat.AIC = Akaike Information Criterion
@@ -39,11 +42,12 @@ function stat = multregr(X,y,varargin)
 %                        structure instead of multiple outputs
 %           07/12/2022 - added Akaike and Bayesian Information Criteria
 %                        output to stat structure
-
-% TODO: 1) run twice, with standardized and non-standardized predictors/y
+%           08/14/2025 - added AR pre-whitening option and standardized
+%                        beta output
 
 % defaults
 is_contrast = false;
+pre_whiten = false;
 
 % check input arguments
 if ~isempty(varargin)
@@ -51,11 +55,14 @@ if ~isempty(varargin)
     if (mod(optargin,2) ~= 0)
         error('Optional arguments must come in option/value pairs');
     else
-        for i=1:2:optargin
-            switch varargin{i}
+        for arg=1:2:optargin
+            switch varargin{arg}
                 case 'contrast'
-                    conmat = varargin{i+1};
+                    conmat = varargin{arg+1};
                     is_contrast = true;
+                case 'AR'
+                    pre_whiten = true;
+                    ar_p = varargin{arg+1};
                 otherwise
                     error('Invalid option!');
             end
@@ -70,25 +77,48 @@ if any(X(:,1) ~= 1)
     warning('X may not have constant column. Results may be unexpected without y intercept!');
 end
 
-% betas
+% betas via Ordinary Least Squares
 b = pinv(X'*X)*X'*y;
 
-% predicted scores and residuals
-yhat = X*b; % predicted scores
+% predicted scores and residuals 
+yhat = X * b; % predicted scores
 e = y - yhat; % residuals
 
-% partition SS and coefficient of determination
-SSresid = e'*e;
-SStotal = y'*y - (sum(y)^2/n);
-SSreg = SStotal - SSresid;
-r2   = SSreg/SStotal;
-F = SSreg/SSresid;
+% estimate AR(p) on residuals
+if pre_whiten
+    Y_ar = e(ar_p+1:end);
+    X_ar = zeros(n-ar_p, ar_p);
+    for i = 1:ar_p
+        X_ar(:,i) = e(ar_p+1-i:end-i);
+    end
+    rho = X_ar \ Y_ar; % AR coefficients
+    
+    % pre-whiten y and X by AR(p) filter
+    a = [1; -rho]; % AR filter denominator: 1 - rho1*z^-1 - rho2*z^-2 ...
+    y_pw = filter(a, 1, y);
+    X_pw = filter(a, 1, X);
+
+    % re-run GLS regression on pre-whitened data (dropping first p rows)
+    idx = (ar_p+1):n;
+    b = X_pw(idx,:) \ y_pw(idx);
+    X = X_pw;
+    yhat = X * b;
+    e = y - yhat;
+else
+    idx = 1:n;
+end
 
 % standard errors
-k = size(X,2); % k regressors, some references list as p
-df_resid = n - k;
-C = (SSresid/(n - k)) * inv(X'*X); % covariance of standard errors
+df_resid = n - p;
+SSresid = (e(idx)' * e(idx)) / df_resid;
+C = SSresid * inv(X(idx,:)' * X(idx,:));
 SEb =  sqrt(diag(C));
+
+% partition SS and coefficient of determination
+SStotal = y'*y - (sum(y)^2/n);
+SSreg = SStotal - SSresid;
+r2 = SSreg/SStotal;
+F = SSreg/SSresid;
 
 % significance of betas using t-scores and incomplete beta function
 tvals = b./SEb;
@@ -99,8 +129,10 @@ pvals = pvals'; % just to make it consistent with other col vectors
 
 % output structure
 stat = [];
-stat.beta = b; % raw regression coefficients
-%stat.beta = ; % beta = b (sd(y)/sd(x)) to standardize
+stat.coeff = b; % raw regression coefficients
+y_sd = std(y);
+X_sd = std(X,0,1);
+stat.beta = stat.coeff .* (X_sd(:) / y_sd);
 stat.r2 = r2;
 stat.F = F;
 stat.tvals = tvals;

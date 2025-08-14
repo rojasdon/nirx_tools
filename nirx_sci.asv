@@ -77,8 +77,12 @@ if ~isempty(varargin)
     end
 end
 
+% extract wl data
+od760 = squeeze(data(1,sample_indices,:))';
+od850 = squeeze(data(2,sample_indices,:))';
+
 % high pass filter
-od_f = nirx_filter(data,hdr,'type','high','cutoffs',lo_cut,'order',1); % gentle order from PHOEBE
+od_f = nirx_filter(od760,hdr,'type','high','cutoffs',lo_cut,'order',1); % gentle order from PHOEBE
 
 % low pass at either desired 2.5 Hz or what is allowable by Niquist. If
 % Niquist < 1.5 do not highpass data, just let anti-alias be enough
@@ -94,9 +98,8 @@ else
 end
 
 % extract wl data
-od760f = squeeze(od_f(1,sample_indices,:))';
-od850f = squeeze(od_f(2,sample_indices,:))';
-
+od760 = squeeze(data(1,sample_indices,:))';
+od850 = squeeze(data(2,sample_indices,:))';
 % normalization (not needed with xcorr option 'normalized')
 xbar_lo = repmat(mean(od760f,2),1,length(od760f)); % channel means
 sd_lo = repmat(std(od760f,[],2),1,length(od760f)); % channel sdev

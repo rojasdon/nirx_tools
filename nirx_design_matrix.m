@@ -103,6 +103,6 @@ if visuals
     ylabel('Samples');
     xlabel('Regressors');
     xticks(1:length(X.names)+1);
-    xticklabels(['constant' X.names]);
+    xticklabels(['constant';X.names]);
     colormap gray;
 end
