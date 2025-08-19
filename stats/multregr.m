@@ -1,4 +1,4 @@
-function stat = multregr(X,y,varargin)
+function [stat,constats] = multregr(X,y,varargin)
 % Author: Don Rojas, Ph.D.
 % Purpose: Function to calculate multiple linear regression in matrix form from Eq: Y = Xb + e
 % Notes: 1. tested accurately using mtcars dataset against R using lm
@@ -34,8 +34,8 @@ function stat = multregr(X,y,varargin)
 %           6) stat.tvals is t-statistic (beta / standard error of beta)
 %           7) stat.pvals is significance value, two-tailed
 %           8) stat.resid is residuals
-%           9) stat.contrast contains tvals and pvals for contrast input
 %          10) stat.yhat = y-hat, predicted values of y from regression
+%          11) Contrast, optional output of tvals and pvals for contrast input
 %           
 % History:  12/13/2018 - first working version
 %           04/02/2022 - added contrast input/output, changing output to a
@@ -149,17 +149,18 @@ stat.yhat = yhat;
 % related to Wald W and F as follows: T^2 = W = F. See: https://cran.r-project.org/web/packages/clubSandwich/vignettes...
 %   /Wald-tests-in-clubSandwich.html
 if is_contrast
+    constats = struct('contrast',conmat,...
+        'tvals',zeros(1,size(conmat,1)),'pvals',zeros(1,size(conmat,1)));
     for ii = 1:size(conmat,1)
         con_est = conmat(ii,:)*stat.beta;
-        contrast.tvals(ii) = ...
+        constats.tvals(ii) = ...
             sqrt(con_est'*pinv(conmat(ii,:)*stat.Cov*conmat(ii,:)')*con_est);
-        contrast.pvals(ii) = ...
-            betainc(df_resid/(df_resid+(contrast.tvals(ii)^2)),0.5*df_resid,0.5);
+        constats.pvals(ii) = ...
+            betainc(df_resid/(df_resid+(constats.tvals(ii)^2)),0.5*df_resid,0.5);
     end
-    stat.contrast = contrast;
     % check that contrast weights sum to zero (centered)
     if any(sum(conmat,2) ~= 0)
-        stat.contrast.warning = "Some contrast row weights do not sum to zero!";
+        stats.warning = "Some contrast row weights do not sum to zero!";
     end
 end
 
