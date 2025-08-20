@@ -32,6 +32,7 @@ Srad = 4; % sphere radius mm
 Crad = 2; % cylinder radius mm
 N = 20; % number of elements in spheres and cylinders
 fc = [0 1 0]; % green is default color for channels
+fa = 1;
 
 % sort option/arg pairs
 if ~isempty(varargin)
@@ -45,6 +46,8 @@ if ~isempty(varargin)
                     S = varargin{option+1};
                 case 'facecolor'
                     fc = varargin{option+1};
+                case 'facealpha'
+                    fa = varargin{option+1};
                 case 'sphere_r'
                     Srad = varargin{option+1};
                 case 'cylinder_r'
@@ -80,6 +83,9 @@ if ~isempty(varargin)
     type(sources) = 1;
     if plotchan
         fc = repmat(fc,size(SDpairs,1),1);
+        if numel(fa) == 1
+            fa = repmat(fa,size(SDpairs,1,1));
+        end
     end
 
     % axis handle
@@ -133,12 +139,14 @@ if ~isempty(varargin)
         nchan = size(SDpairs,1);
         for chn=1:nchan
             pair = SDpairs(chn,:);
-            [C(chn).X,C(chn).Y,C(chn).Z]=cylinder2P(Crad,N,spos(pair(1),:),dpos(pair(2),:));
+            %[C(chn).X,C(chn).Y,C(chn).Z]=cylinder2P(Crad,N,spos(pair(1),:),dpos(pair(2),:));
+            [C(chn).X,C(chn).Y,C(chn).Z]=polygonal_cylinder(spos(pair(1),:),dpos(pair(2),:),Crad,N);
         end
         % plot channels
         for chn=1:nchan
             ch(chn)=surf(ax,C(chn).X,C(chn).Y,C(chn).Z);
             ch(chn).FaceColor = fc(chn,:);
+            ch(chn).FaceAlpha = fa(chn);
             ch(chn).EdgeColor = 'none';
             ch(chn).FaceLighting = 'gouraud';
         end
