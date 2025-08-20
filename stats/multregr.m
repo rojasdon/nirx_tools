@@ -1,4 +1,4 @@
-function [stat,constats] = multregr(X,y,varargin)
+function [stat,constat] = multregr(X,y,varargin)
 % Author: Don Rojas, Ph.D.
 % Purpose: Function to calculate multiple linear regression in matrix form from Eq: Y = Xb + e
 % Notes: 1. tested accurately using mtcars dataset against R using lm
@@ -35,7 +35,10 @@ function [stat,constats] = multregr(X,y,varargin)
 %           7) stat.pvals is significance value, two-tailed
 %           8) stat.resid is residuals
 %          10) stat.yhat = y-hat, predicted values of y from regression
-%          11) Contrast, optional output of tvals and pvals for contrast input
+%          11) constat, optional output of tvals and pvals for contrast input
+%              constat has fields labeled c1con, c1t, c1p, c2con, c2t, c2p,
+%              etc., up to the number of contrasts entered, with the
+%              contrast weights, t value and p value for the contrast.
 %           
 % History:  12/13/2018 - first working version
 %           04/02/2022 - added contrast input/output, changing output to a
@@ -149,18 +152,19 @@ stat.yhat = yhat;
 % related to Wald W and F as follows: T^2 = W = F. See: https://cran.r-project.org/web/packages/clubSandwich/vignettes...
 %   /Wald-tests-in-clubSandwich.html
 if is_contrast
-    constats = struct('contrast',conmat,...
-        'tvals',zeros(1,size(conmat,1)),'pvals',zeros(1,size(conmat,1)));
-    for ii = 1:size(conmat,1)
+    constat = struct();
+    ncon = size(conmat,1);
+    for ii = 1:ncon
         con_est = conmat(ii,:)*stat.beta;
-        constats.tvals(ii) = ...
-            sqrt(con_est'*pinv(conmat(ii,:)*stat.Cov*conmat(ii,:)')*con_est);
-        constats.pvals(ii) = ...
-            betainc(df_resid/(df_resid+(constats.tvals(ii)^2)),0.5*df_resid,0.5);
+        constat.(['c' num2str(ii) 'con']) = conmat(ii,:);
+        tval = sqrt(con_est'*pinv(conmat(ii,:)*stat.Cov*conmat(ii,:)')*con_est);
+        constat.(['c' num2str(ii) 't']) = tval;
+        constat.(['c' num2str(ii) 'p']) = ...
+            betainc(df_resid/(df_resid+(tval^2)),0.5*df_resid,0.5);
     end
     % check that contrast weights sum to zero (centered)
     if any(sum(conmat,2) ~= 0)
-        stats.warning = "Some contrast row weights do not sum to zero!";
+        stat.warning = "Some contrast row weights do not sum to zero!";
     end
 end
 
