@@ -1,6 +1,7 @@
 function [stat,constat] = multregr(X,y,varargin)
 % Author: Don Rojas, Ph.D.
-% Purpose: Function to calculate multiple linear regression in matrix form from Eq: Y = Xb + e
+% Purpose: Function to calculate OLS multiple linear regression in matrix form
+%          from Eq: Y = Xb + e, can also do GLS using prewhitening filter
 % Notes: 1. tested accurately using mtcars dataset against R using lm
 %           regression and aov package wald.test() function
 %        2. Matlab program regress.m offers more quality checks if you have
@@ -13,6 +14,7 @@ function [stat,constat] = multregr(X,y,varargin)
 %            3. Gourieroux, C. et al. (1982). Likelihood Ratio Test, Wald Test, and Kuhn-Tucker 
 %               Test in Linear Models with Inequality Constraints on the
 %               Regression Parameters. Econometrica, 50, 63-80.
+%            4. https://en.wikipedia.org/wiki/Generalized_least_squares
 % Inputs:   1) X = r x n matrix of IV regressors, r = regressors, n = number of
 %                  samples/subjects
 %              NOTE: column 1 of X should be ones(n,1) so that the Y
@@ -34,6 +36,7 @@ function [stat,constat] = multregr(X,y,varargin)
 %           6) stat.tvals is t-statistic (beta / standard error of beta)
 %           7) stat.pvals is significance value, two-tailed
 %           8) stat.resid is residuals
+%           9) stat.dfe is degrees of freedom error (residual)
 %          10) stat.yhat = y-hat, predicted values of y from regression
 %          11) constat, optional output of tvals and pvals for contrast input
 %              constat has fields labeled c1con, c1t, c1p, c2con, c2t, c2p,
@@ -144,6 +147,7 @@ stat.SEb = SEb;
 stat.AIC = n * log(SSresid/n) + 2 * p; % Akaike, 1969
 stat.BIC = n * log(SSresid/n) + p * log(n); % Schwarz, 1978
 stat.Cov = C;
+stat.dfe = df_resid;
 stat.resid = e;
 stat.yhat = yhat;
 
