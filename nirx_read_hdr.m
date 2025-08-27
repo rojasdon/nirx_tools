@@ -45,9 +45,12 @@ nirx.shortbundles = 0;
 
 % read file information
 C = readtext(file); % new way, ultimately replace rest of line by line
+%fp = fopen(file,'r');
+%C = textscan(fp, '%s', 'Delimiter', '\n', 'whitespace', '');
 exp = '=';
 for ii=1:length(C)
     [hit, nohit] = regexp(char(C{ii}),exp,'match','split');
+    %[hit, nohit] = regexp(char(C{1}(ii)),exp,'match','split');
     if ~isempty(hit)
         switch(nohit{1})
             case 'FileName'
@@ -101,6 +104,7 @@ for ii=1:length(C)
         end
     end
 end
+
 
 % S-D-Key
 clear C;
@@ -168,7 +172,7 @@ while ~feof(fp)
                     line = fgetl(fp);
                 end
                 nirx.gains   = G;
-            case 3 % some header files (newer?) do not have events
+            case 3 % some header files (older?) do not have events
                 while isempty(strfind(line,tofind))
                     tmp = textscan(line,'%f\t%d\t%d');
                     E(ind).time = tmp{1};
