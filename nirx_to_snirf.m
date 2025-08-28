@@ -3,27 +3,64 @@
 % Inputs:   hdr, from nirx_read_hdr.m
 %           data, from nirx_read_wl.m
 %           outfile, string name of output file
-% Optional Input: probe structure containing
-%           .source2d
-%           .source3d
-%           .detector2d
-%           .detector3d
+% Optional Input in Key/Val pairs:
+%           1.'probe', probe structure containing
+%               .source2d
+%               .source3d
+%               .detector2d
+%               .detector3d
+%           2. 'stimdur', [1 x nConditions] vector containing duration of stimuli/conditions
+%               in experiment
+%           
 % NOTE: at present, both Homer3 and Brain AnalyzIR can read output from
-% this function. But some changes were made for Homer3 that seem out of
-% spec with official format. Example: source positions should be nSource x
-% 3, but to make it work for Homer3, this is written as 3 x nSource.
-% AnalyzIR doesn't seem to care.
+%       this function. But some changes were made for Homer3 that seem out of
+%       spec with official format. Example: source positions should be nSource x
+%       3, but to make it work for Homer3, this is written as 3 x nSource.
+%       AnalyzIR doesn't seem to care.
+% Info: https://github.com/fNIRS/snirf/blob/v1.1/snirf_specification.md
+% Todo: see comments in line, but also write helper for h5create/h5write
+%       pairs to reduce complexity
+
 function nirx_to_snirf(hdr,data,outfile,varargin)
+    % parse input and set default options
+    isProbe = false;
+    isStimDur = false;
+    if nargin < 3
+        error('Must supply at least 3 arguments to function!');
+    else
+        if ~isempty(varargin)
+            optargin = size(varargin,2);
+            if (mod(optargin,2) ~= 0)
+                error('Optional arguments must come in option/value pairs');
+            else
+                for option=1:2:optargin
+                    switch lower(varargin{option})
+                        case 'probe'
+                            probeStruct = varargin{option+1};
+                            isProbe = true;
+                        case 'stimdur'
+                            stimdur = varargin{option+1};
+                            isStimDur = true;
+                        otherwise
+                            error('Invalid option!');
+                    end
+                end
+            end
+        end
+    end
 
     % path info
     [path_to_file, filename, fileext] = fileparts(outfile);
     if strcmpi(fileext,'snirf')
         outfile = [outfile '.snirf'];
     end
+    if isempty(path_to_file)
+        outfile = fullfile(pwd,[filename fileext]);
+    end
 
     % version
     h5create(outfile,'/formatVersion',1, 'Datatype', 'string');
-    h5write(outfile,'/formatVersion',"1.0");
+    h5write(outfile,'/formatVersion',"1.1");
 
     % check outfile
     if isfile(outfile)
@@ -31,24 +68,53 @@ function nirx_to_snirf(hdr,data,outfile,varargin)
     end
 
     % see if there is probeinfo in optional input
-    if isfield(varargin{1},'probes')
-        tmp = varargin{1}; %
-        probetype = 'nirx';
-        probe.source3d = tmp.probes.coords_s3 * 1e1; % cm to mm
-        probe.detector3d = tmp.probes.coords_d3 * 1e1;
-        probe.source2d = tmp.probes.coords_s2 * 1e1;
-        probe.detector2d = tmp.probes.coords_d2 * 1e1;
-    elseif isfield(varargin{1},'sourcePos')
-        tmp = varargin{1};
-        probetype = 'custom';
-        s_idx = find(labels.contains('S'));
-        d_idx = find(labels.contains('D'));
-        probe.source3d = tmp.pos3d(s_idx,:); % already in mm
-        probe.detector3d = tmp.pos3d(d_idx,:);
-        probe.source2d = tmp.pos2d(s_idx,:);
-        probe.detector2d = tmp.pos2d(d_idx,:);
+    if isProbe
+        % determine type of info supplied
+        if isfield(probeStruct,'probes')
+            probetype = 'nirx';
+            probe.source3d = probeStruct.probes.coords_s3 * 1e1; % cm to mm
+            probe.detector3d = probeStruct.probes.coords_d3 * 1e1;
+            probe.source2d = probeStruct.probes.coords_s2 * 1e1;
+            probe.detector2d = probeStruct.probes.coords_d2 * 1e1;
+        elseif isfield(probeStruct,'pos3d')
+            probetype = 'custom'; % might be from nirx_read_optpos.m
+            s_idx = find(labels.contains('S'));
+            d_idx = find(labels.contains('D'));
+            probe.source3d = probeStruct.pos3d(s_idx,:); % already in mm
+            probe.detector3d = probeStruct.pos3d(d_idx,:);
+            probe.source2d = probeStruct.pos2d(s_idx,:);
+            probe.detector2d = probeStruct.pos2d(d_idx,:);
+        end
     end
     
+    % write stim field, if any - determine if stim info in hdr: todo,
+    % optional pass of stim info from .evt file
+    if isfield(hdr,'events')
+        codes = double(unique([hdr.events.code]));
+        nevents = length(codes);
+        if isStimDur
+            if length(stimdur) ~= length(codes)
+                error('Error: stimulus durations must be same as conditions in number!');
+            end
+        else
+            stimdur = 1; % default duration in s, can change later in whatever processing software used
+        end
+        for c = 1:nevents
+            c_ind = find([hdr.events.code] == codes(c));
+            starttimes = [hdr.events(c_ind).time];
+            durations = double(repmat(stimdur(c),1,length(starttimes)));
+            values = double([hdr.events(c_ind).code]);
+            stimdata{c} = [starttimes' durations' values'];
+        end
+        for c = 1:nevents
+            stimPath = sprintf('/nirs/stim%d', c);
+            h5create(outfile, [stimPath '/name'], length(string(codes(c))), 'Datatype', 'string');
+            h5write(outfile, [stimPath '/name'], string(codes(c)));
+            h5create(outfile, [stimPath '/data'], size(stimdata{c}), 'Datatype', 'double');
+            h5write(outfile, [stimPath '/data'], stimdata{c});
+        end
+    end
+
     % write probe
     nSrc = hdr.sources;
     nDet = hdr.detectors;
@@ -88,11 +154,17 @@ function nirx_to_snirf(hdr,data,outfile,varargin)
     h5write(outfile,[metaFields '/SubjectID'], "anonymous"); % change to input from function
     h5create(outfile,[metaFields '/MeasurementDate'],1,'Datatype','string');
     h5write(outfile,[metaFields '/MeasurementDate'], string(t));
-    t = datetime(hdr.time,'InputFormat','HH:mm a');
-    t.TimeZone ='America/Denver';
-    t.Format = 'h:mm a z';
+    % Try format with milliseconds first
+    try
+        dt = datetime(hdr.time, 'InputFormat','HH:mm:ss.SSS',TimeZone = 'local');
+    catch
+        % Fallback: assume hh:mm AM/PM format
+        dt = datetime(hdr.time, 'InputFormat','hh:mm a',TimeZone = 'local');
+    end
+    % Return time in hh:mm:ss.SSS z format
+    timeStr = char(datetime(dt,'Format','HH:mm:ss.SSS z'));
     h5create(outfile,[metaFields '/MeasurementTime'],1,'Datatype','string');
-    h5write(outfile,[metaFields '/MeasurementTime'], string(t));
+    h5write(outfile,[metaFields '/MeasurementTime'], string(timeStr));
     h5create(outfile,[metaFields '/LengthUnit'],1,'Datatype','string');
     h5write(outfile,[metaFields '/LengthUnit'], "cm");
     h5create(outfile,[metaFields '/TimeUnit'],1,'Datatype','string');
@@ -118,22 +190,18 @@ function nirx_to_snirf(hdr,data,outfile,varargin)
                 case 2
                     measPath = sprintf('/nirs/data1/measurementList%d', hdr.nchan + chn);
             end
-            h5create(outfile, [measPath '/sourceIndex'], 1, 'Datatype', 'int16'); % int32 or int16
-            h5write(outfile, [measPath '/sourceIndex'], int16(src_idx));
-            h5create(outfile, [measPath '/detectorIndex'], 1, 'Datatype', 'int16');
-            h5write(outfile, [measPath '/detectorIndex'], int16(det_idx));
-            h5create(outfile, [measPath '/wavelengthIndex'], 1, 'Datatype', 'int16');
-            h5write(outfile, [measPath '/wavelengthIndex'], int16(wl));
-            h5create(outfile, [measPath '/dataType'], 1, 'Datatype', 'int16');
-            h5write(outfile, [measPath '/dataType'], int16(dt));
-            h5create(outfile, [measPath '/dataTypeIndex'], 1, 'Datatype', 'int16');
-            h5write(outfile, [measPath '/dataTypeIndex'], int16(dt_idx));
+            h5create(outfile, [measPath '/sourceIndex'], 1, 'Datatype', 'int32'); % int32 or int16?
+            h5write(outfile, [measPath '/sourceIndex'], int32(src_idx));
+            h5create(outfile, [measPath '/detectorIndex'], 1, 'Datatype', 'int32');
+            h5write(outfile, [measPath '/detectorIndex'], int32(det_idx));
+            h5create(outfile, [measPath '/wavelengthIndex'], 1, 'Datatype', 'int32');
+            h5write(outfile, [measPath '/wavelengthIndex'], int32(wl));
+            h5create(outfile, [measPath '/dataType'], 1, 'Datatype', 'int32');
+            h5write(outfile, [measPath '/dataType'], int32(dt));
+            h5create(outfile, [measPath '/dataTypeIndex'], 1, 'Datatype', 'int32');
+            h5write(outfile, [measPath '/dataTypeIndex'], int32(dt_idx));
 
             % detectorGain % could write these to measPath as well
-        
-            % Optional: add a label
-            % h5create(outFile, [ml_group '/dataTypeLabel'], 1, 'Datatype', 'string');
-            % h5write(outFile, [ml_group '/dataTypeLabel'], "CW");
         end
     end
     
