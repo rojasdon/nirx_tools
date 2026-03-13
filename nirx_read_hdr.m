@@ -83,8 +83,8 @@ for ii=1:length(C)
                 nirx.ver =  str2num(strrep(nohit{2},'"',''));
             case 'ChanDis'
                 nirx.dist = str2num(strrep(nohit{2},'"',''));
-            case 'ModAmp'
-                nirx.mod = str2num(strrep(nohit{2},'"',''));
+            case 'Mod Amp'
+                nirx.ModAmp = str2num(strrep(nohit{2},'"',''));
             case 'Subject'
                 nirx.sub = str2num(nohit{2});
             case 'AnIns'

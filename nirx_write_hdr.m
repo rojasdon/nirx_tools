@@ -36,7 +36,7 @@ fprintf(fp,['TrigIns=' num2str(hdr.trigin) '\n']);
 fprintf(fp,['TrigOuts=' num2str(hdr.trigout) '\n']);
 fprintf(fp,['AnIns=' num2str(hdr.anins) '\n']);
 fprintf(fp,['SamplingRate=' num2str(hdr.sr) '\n']);
-if isfield(hdr,'mod');fprintf(fp,['ModAmp="' num2str(hdr.mod) '"\n']);end
+if isfield(hdr,'ModAmp');fprintf(fp,['Mod Amp="' num2str(hdr.ModAmp) '"\n']);end
 fprintf(fp,['Threshold="' num2str(hdr.threshold) '"\n']);
 fprintf(fp,'\n[Paradigm]\n');
 fprintf(fp,['StimulusType="' hdr.stimtype '"\n']);

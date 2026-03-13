@@ -90,7 +90,7 @@ b = pinv(X'*X)*X'*y;
 yhat = X * b; % predicted scores
 e = y - yhat; % residuals
 
-% estimate AR(p) on residuals
+% estimate AR(p) on residuals using Cochrane-Orchutt procedure
 if pre_whiten
     Y_ar = e(ar_p+1:end);
     X_ar = zeros(n-ar_p, ar_p);

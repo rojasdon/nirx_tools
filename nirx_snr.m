@@ -1,22 +1,22 @@
-function q = nirx_cv(data,varargin)
-% PURPOSE: NIRx signal quality metric, same as calculated at calibration,
-%          but on specified data input to function
+function q = nirx_snr(data,varargin)
+% PURPOSE: Signal to noise (SNR) based metric, as in Yucel et al. (2021)
+% best practices paper. 20 * log10(mean/sd)
 % AUTHOR: Don Rojas, Ph.D.
 % INPUT:
 %   data = raw or od intensity data, from nirx_read_wl.m
 % OPTIONAL (arg pairs):
-%   threshold = threshold for bad channels
+%   threshold = threshold for bad channels, default = 20
 % OUTPUT:
 %   q, a structure containing the following components:
-%   q.cv = coefficient of variation for multiple wavelengths
-%   q.cvmax = worst cv across wavelengths
-%   q.bad = bad channels by threshold using cvmax
+%   q.snr = coefficient of variation for multiple wavelengths
+%   q.snrmax = worst cv across wavelengths
+%   q.bad = bad channels by threshold using snr
 % HISTORY
 % NOTE: 20 dB SNR = .1 CV (fraction, not %). 0.075 CV = 22.5 dB SNR
-% SEE ALSO: nirx_snr.m
+% SEE ALSO: nirx_cv.m
 
 % defaults
-threshold = 7.5;
+threshold = 20; % dB
 
 % check/process input arguments
 if ~isempty(varargin)
@@ -38,7 +38,7 @@ end
 % calculate level and noise measures
 level = squeeze(mean(data,2));
 dev = squeeze(std(data,[],2));
-q.cv = (dev./level)*100;
-q.cvmax = max(q.cv); % worst wavelength is used for threshold
-q.bad = find(q.cvmax > threshold)';
+q.snr = 20 * log10(level./dev);
+q.cvmax = max(q.snr); % worst wavelength is used for threshold
+q.bad = find(q.snr > threshold)';
 
