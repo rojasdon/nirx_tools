@@ -12,9 +12,11 @@ function nirx_plotSD_3d(pos,sources,varargin)
 %       scalp. If supplied in structure, S.offset is an override to default
 %       offset = 5 mm, indicating how far to offset optodes from supplied
 %       surface. Optodes are projected away along their surface normal.
-%   'facecolor', fc = face color rgb vector or nchan x 3 array for channel
+%   'chancolor', fc = face color rgb vector or nchan x 3 array for channel
 %       colors, can be used to plot channel info, stats, etc.
-%   'facealpha', fa = face alpha for channels, useful for stats
+%   'chanalpha', fa = face alpha for channels, useful for stats
+%   'sourcecolor', sc = source color
+%   'detectorcolor', sc = source color
 %   'offset', offset = projection along surface normal for sensor, used for
 %       plotting with surfaces so that optodes do not intersect surface
 %       (default = 10 mm, not used unless surface supplied)
@@ -22,6 +24,9 @@ function nirx_plotSD_3d(pos,sources,varargin)
 %   'cylinder_r', r = radius of channel cylinders in mm (default = 2 mm)
 %   'axis', ax = handle to existing graphics axis to plot if desired
 %   'lights', state, 1 = on, 0 = off (default). Adds camlights to 3d scene
+%   'labels', 1 x nchannel string array of labels
+% Changelog:
+%   08/02/2026 - added flexibility for source, detector and channel colors
 
 % defaults
 setlights = 0;
@@ -32,6 +37,8 @@ Srad = 4; % sphere radius mm
 Crad = 2; % cylinder radius mm
 N = 20; % number of elements in spheres and cylinders
 fc = [0 1 0]; % green is default color for channels
+sc = [1 0 0]; % red is default source color
+dc = [0 0 1]; % blue is default detector color
 fa = 1;
 
 % sort option/arg pairs
@@ -44,10 +51,14 @@ if ~isempty(varargin)
             switch lower(varargin{option})
                 case 'surface'
                     S = varargin{option+1};
-                case 'facecolor'
+                case 'chancolor'
                     fc = varargin{option+1};
-                case 'facealpha'
+                case 'chanalpha'
                     fa = varargin{option+1};
+                case 'sourcecolor'
+                    sc = varargin{option+1};
+                case 'detectorcolor'
+                    dc = varargin{option+1};
                 case 'sphere_r'
                     Srad = varargin{option+1};
                 case 'cylinder_r'
@@ -127,9 +138,9 @@ if ~isempty(varargin)
         sh(opt).EdgeColor = 'none';
         sh(opt).FaceLighting = 'gouraud';
         if type(opt)
-            sh(opt).FaceColor = 'r';
+            sh(opt).FaceColor = sc;
         else
-            sh(opt).FaceColor = 'b';
+            sh(opt).FaceColor = dc;
         end
     end
     if plotchan
@@ -153,7 +164,7 @@ if ~isempty(varargin)
     end
     axis(ax,'image');
     if plotlabels
-        text(ax,pos(:,1),pos(:,2),pos(:,3)+offset+2,labels,'FontWeight','bold');
+        text(ax,pos(:,1),pos(:,2),pos(:,3)+offset+5,labels,'FontWeight','bold','Color',[34 34 34]/255,'FontSize',16);
     end
     if setlights
         camlight(ax,'left');
