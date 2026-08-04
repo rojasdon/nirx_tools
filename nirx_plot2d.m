@@ -45,7 +45,7 @@ channelcolor = [0 0 0]; % default channel color
 chanlines = {'-'}; % default solid line
 s_color = [1 0 0];
 d_color = [0 0 1];
-dsize = 80; % default dot size for optodes
+dsize = 50; % default dot size for optodes
 csize = 1; % default line size for channels
 
 if ~isempty(varargin)
@@ -101,6 +101,7 @@ if usehead
     ax.Visible = 'off';
     axis('equal');
 end
+ax.FontSize = 10;
 [rows, columns, ~] = size(top);
 
 % sort sources from detectors
@@ -119,7 +120,7 @@ end
 columns = ceil(columns * .95); % reduce size a bit to fit nicely within head graphic
 rows = ceil(rows * .95);
 loc2d(:,1) = max(loc2d(:,1)) + min(loc2d(:,1)) - loc2d(:,1); % mirror about midline axis
-loc2d(:,1) = columns - rescale(loc2d(:,1), 1, columns - 75); % 75 is nice l to r nudge for view
+loc2d(:,1) = columns - rescale(loc2d(:,1), 1, columns - 50); % 75 is nice l to r nudge for view
 loc2d(:,2) = rows - rescale(loc2d(:,2), 1, rows - 180); % 180 is nudge to nice top to bottom view
 
 % plot channels first (looks better if circles are overplotted)
@@ -155,4 +156,4 @@ if labelson
 end
 
 % legend
-legend([h1,h2],{'Sources','Detectors'},'Location','northeastoutside','Box','off');
+legend([h1,h2],{'Sources','Detectors'},'Location','southoutside','Box','off');
